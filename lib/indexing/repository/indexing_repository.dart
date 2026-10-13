@@ -750,7 +750,9 @@ class IndexingRepository {
       final textStorage = textStorageFor(
         filePath: filePath,
         libraryDbBookId: source.libraryDbBookId,
+        userBooksDbBookId: source.userBooksDbBookId,
         hostApiReady: LibraryLineSource.hostApiReady,
+        userBooksConfigured: LibraryLineSource.userBooksConfigured,
       );
       final storedLines = textStorage == TextStorage.libraryDb
           ? source.dataUriLines
@@ -1410,7 +1412,8 @@ class IndexingRepository {
   /// (בלי פענוח/קידוד על ה-UI isolate), וירידה לטקסט מפוענח ומנוקה רק
   /// כשחייבים (תמונות מוטמעות, פורמט מומר, ספר בלי categoryId). משותף
   /// לאינדוקס ולאימות הטריות — כך שתי החתימות מחושבות על אותו קלט בדיוק.
-  /// [libraryDbBookId] — ה-id ב-seforim.db כשהמקור הוא שורות הספר משם.
+  /// [libraryDbBookId] — ה-id ב-seforim.db כשהמקור הוא שורות הספר משם;
+  /// [userBooksDbBookId] — כמוהו ב-user_books.db.
   /// [dataUriLines] — השורות שנוקו מהן תמונות; ראו [dataUriLineOrdinals].
   @visibleForTesting
   Future<
@@ -1418,6 +1421,7 @@ class IndexingRepository {
       Uint8List? bytes,
       String? text,
       int? libraryDbBookId,
+      int? userBooksDbBookId,
       Uint32List? dataUriLines,
     })
   >
@@ -1425,6 +1429,7 @@ class IndexingRepository {
     Uint8List? bytes;
     String? text;
     int? libraryDbBookId;
+    int? userBooksDbBookId;
     Uint32List? dataUriLines;
     if (book.categoryId != null) {
       final fromDb = await SqliteDataProvider.instance.getBookTextBytesFromDb(
@@ -1435,6 +1440,7 @@ class IndexingRepository {
       );
       bytes = fromDb?.bytes;
       libraryDbBookId = fromDb?.officialBookId;
+      userBooksDbBookId = fromDb?.userBookId;
       // ניקוי תמונות מוטמעות חייב לרוץ בשני הצדדים — אחרת חתימת האינדוקס
       // לעולם לא תתאים לאימות ו-reconcile יאנדקס את הספר מחדש בכל ריצה.
       if (bytes != null) {
@@ -1450,6 +1456,7 @@ class IndexingRepository {
     }
     if ((bytes == null || bytes.isEmpty) && (text == null || text.isEmpty)) {
       libraryDbBookId = null;
+      userBooksDbBookId = null;
       dataUriLines = null;
       text = await _loadTextForIndex(book);
     }
@@ -1457,6 +1464,7 @@ class IndexingRepository {
       bytes: bytes,
       text: text,
       libraryDbBookId: libraryDbBookId,
+      userBooksDbBookId: userBooksDbBookId,
       dataUriLines: dataUriLines,
     );
   }
@@ -1651,19 +1659,29 @@ class IndexingRepository {
     return '$title|${categoryKey ?? ''}|${fileTypeKey ?? ''}|${pathKey ?? ''}';
   }
 
-  /// [TextStorage.libraryDb] רק לשורות ספר מ-seforim.db שמפתחו `id:<אותו id>`
-  /// וכשהמנוע יכול לקרוא את המסד; אחרת הטקסט נשמר באינדקס.
+  /// [TextStorage.libraryDb] רק לשורות ספר מ-seforim.db שמפתחו `id:<אותו id>`,
+  /// או מ-user_books.db שמפתחו `uid:<אותו id>`, וכשהמנוע יכול לקרוא את המסד
+  /// הזה; אחרת הטקסט נשמר באינדקס.
   @visibleForTesting
   static TextStorage textStorageFor({
     required String filePath,
     required int? libraryDbBookId,
+    required int? userBooksDbBookId,
     required bool hostApiReady,
-  }) =>
-      hostApiReady &&
-          libraryDbBookId != null &&
-          filePath == officialBookKey(libraryDbBookId)
-      ? TextStorage.libraryDb
-      : TextStorage.inIndex;
+    required bool userBooksConfigured,
+  }) {
+    if (!hostApiReady) return TextStorage.inIndex;
+    if (libraryDbBookId != null &&
+        filePath == officialBookKey(libraryDbBookId)) {
+      return TextStorage.libraryDb;
+    }
+    if (userBooksConfigured &&
+        userBooksDbBookId != null &&
+        filePath == userBookKey(userBooksDbBookId)) {
+      return TextStorage.libraryDb;
+    }
+    return TextStorage.inIndex;
+  }
 
   /// מפתח catalogueOrderKey לספר אישי (user_books.db) לפי id גולמי.
   static String userBookKey(int id) => 'uid:$id';
