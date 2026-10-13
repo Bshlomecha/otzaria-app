@@ -2344,6 +2344,7 @@ class PluginBridgeAdapter {
         grouping: request.grouping,
         wordMatchMode: request.wordMatchMode,
         wordMatchCount: request.wordMatchCount,
+        anyOrder: request.anyOrder,
       ),
       chunkSize: 50,
     );

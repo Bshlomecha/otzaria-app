@@ -628,6 +628,7 @@ Future<void> primeHighlightPattern({
   required Map<String, String> spacingValues,
   required int searchDistance,
   required bool isFuzzy,
+  bool anyOrder = false,
   required Future<HighlightPattern?> Function() fetch,
 }) async {
   final key = _highlightRequestKey(
@@ -637,6 +638,7 @@ Future<void> primeHighlightPattern({
     spacingValues,
     searchDistance,
     isFuzzy,
+    anyOrder,
   );
   if (_primedHighlightCache.containsKey(key) ||
       !_primedHighlightInFlight.add(key)) {
@@ -669,12 +671,14 @@ String _highlightRequestKey(
   Map<String, String> spacingValues,
   int searchDistance,
   bool isFuzzy,
+  bool anyOrder,
 ) {
   // מצב fuzzy מפיק תבנית שונה מהותית (וריאנטי מרחק-עריכה וצורות מילון) גם
   // עבור אותם query/distance — בלעדי הסמן, חיפוש advanced ו-fuzzy עם אותם
   // פרמטרים היו חולקים רשומת מטמון בטעות.
   final buffer = StringBuffer()
     ..write(isFuzzy ? 'f' : 'a')
+    ..write(anyOrder ? 'u' : 'o')
     ..write(' ')
     ..write(searchDistance)
     ..write(' ')
@@ -719,8 +723,9 @@ _CompiledHighlightPattern? _resolveHighlightPattern(
   Map<int, List<String>> alternativeWords,
   Map<String, String> spacingValues,
   int searchDistance,
-  bool isFuzzy,
-) {
+  bool isFuzzy, {
+  bool anyOrder = false,
+}) {
   if (!isFuzzy) {
     alternativeWords = withHolyNameAlternatives(searchQuery, alternativeWords);
   }
@@ -731,6 +736,7 @@ _CompiledHighlightPattern? _resolveHighlightPattern(
     spacingValues,
     searchDistance,
     isFuzzy,
+    anyOrder,
   );
   // תבנית מבוססת-אינדקס שהוזנה מראש קודמת ל-fallback: היא מדגישה את
   // הווריאנטים שהחיפוש באמת התאים, לא רק את צורת השאילתה.
@@ -749,6 +755,7 @@ _CompiledHighlightPattern? _resolveHighlightPattern(
       customSpacing: spacingValues,
       alternativeWords: alternativeWords,
       searchOptions: searchOptions,
+      anyOrder: anyOrder,
     ),
   );
 
@@ -1213,6 +1220,7 @@ String highLight(
     spacingValues,
     searchDistance,
     isFuzzy,
+    anyOrder: matchPolicy.anyOrder && !isFuzzy,
   );
   if (compiled == null) return data;
 
@@ -1330,6 +1338,7 @@ List<List<int>> computeHighlightRanges(
     spacingValues,
     searchDistance,
     isFuzzy,
+    anyOrder: matchPolicy.anyOrder && !isFuzzy,
   );
   if (compiled == null) return const [];
   final requireTokenBoundaries = [
