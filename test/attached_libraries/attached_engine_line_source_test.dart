@@ -6,6 +6,7 @@ import 'package:otzaria/attached_libraries/models/attached_library.dart';
 import 'package:otzaria/attached_libraries/repository/attached_libraries_repository.dart';
 import 'package:otzaria/attached_libraries/repository/attached_library_probe.dart';
 import 'package:otzaria/attached_libraries/repository/attached_library_registry.dart';
+import 'package:otzaria/attached_libraries/repository/attached_library_store.dart';
 import 'package:otzaria/attached_libraries/repository/update/attached_update_file_swap.dart';
 import 'package:otzaria/core/windowing/window_role.dart';
 import 'package:path/path.dart' as p;
@@ -166,6 +167,19 @@ void main() {
     });
   });
 
+  test('פעולה שנכשלה בתור המנוע אינה חוסמת את הפעולות שאחריה', () async {
+    registry = AttachedLibraryRegistry(
+      store: _FailOnceStore(),
+      idleTimeout: null,
+    );
+    await expectLater(registry.enableEngineSources(), throwsStateError);
+
+    await build().importFile(fixture('a'));
+    await registry.syncEngineSources();
+
+    expect(calls, ['a=a.db']);
+  });
+
   group('סרק', () {
     tearDown(() => WindowRole.isSecondary = false);
 
@@ -230,6 +244,19 @@ void main() {
 
     expect(immutables, [true]);
   });
+}
+
+class _FailOnceStore extends AttachedLibraryStore {
+  var _failed = false;
+
+  @override
+  List<AttachedLibrary>? loadLibrariesOrNull() {
+    if (!_failed) {
+      _failed = true;
+      throw StateError('settings unavailable');
+    }
+    return super.loadLibrariesOrNull();
+  }
 }
 
 class _RecordingSwap extends AttachedUpdateFileSwap {

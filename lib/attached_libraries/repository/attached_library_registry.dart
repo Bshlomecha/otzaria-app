@@ -208,8 +208,12 @@ class AttachedLibraryRegistry {
     }
   });
 
-  Future<void> _enqueueEngine(Future<void> Function() action) =>
-      _engineQueue = _engineQueue.then((_) => action());
+  /// הקורא מקבל את תוצאת הפעולה שלו; כשלה אינו עוצר את הפעולות שאחריה.
+  Future<void> _enqueueEngine(Future<void> Function() action) {
+    final result = _engineQueue.then((_) => action());
+    _engineQueue = result.then((_) {}, onError: (Object _) {});
+    return result;
+  }
 
   /// המאגר של מסד [slug], או null כשהמסד אינו תקין או שהקובץ אינו נגיש.
   Future<SeforimRepository?> repositoryFor(String slug) {
