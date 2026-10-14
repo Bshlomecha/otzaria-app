@@ -131,6 +131,17 @@ class SearchRepository {
     SearchEngineRequest request,
   ) async => _gateway.searchAndCount(await _engine(), request);
 
+  /// עוצר במנוע את קריאות החיפוש שנשאו את [requestId] (זרם וספירות).
+  /// לא נוגע במנוע שעוד לא נפתח.
+  Future<void> cancelLexicalSearch(int requestId) async {
+    final provider = _engineProvider;
+    if (provider == null) {
+      TantivyDataProvider.instance.cancelLexicalSearch(requestId);
+      return;
+    }
+    (await provider()).cancelLexicalSearch(requestId);
+  }
+
   /// חיפוש בזרם של chunks. האירוע הראשון נושא גם את הספירה הכוללת
   /// ואת הספירה לפי ספר — מחושבות באותו מעבר אינדקס של החיפוש עצמו, במקום
   /// שלוש ריצות נפרדות של אותה שאילתה.

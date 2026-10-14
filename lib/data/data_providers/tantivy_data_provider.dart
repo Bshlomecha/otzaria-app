@@ -592,6 +592,20 @@ class TantivyDataProvider {
     debugPrint('✅ Index reset completed');
   }
 
+  /// מבטל במנוע את קריאות החיפוש של [requestId]. מנוע שלא נפתח לא התחיל אותן.
+  void cancelLexicalSearch(int requestId) {
+    final current = _engineInit.current;
+    if (current == null) return;
+    unawaited(
+      current.then(
+        (engine) =>
+            RustSearchEngineOperations(engine).cancelLexicalSearch(requestId),
+        onError: (Object error) =>
+            debugPrint('cancelLexicalSearch skipped: $error'),
+      ),
+    );
+  }
+
   Future<Map<String, int>> countByBook(
     String query,
     List<String> facets, {
@@ -613,6 +627,7 @@ class TantivyDataProvider {
     WordMatchMode wordMatchMode = WordMatchMode.all,
     int? wordMatchCount,
     bool anyOrder = false,
+    int? cancelRequestId,
   }) async {
     final results = await _searchGateway.countByBook(
       RustSearchEngineOperations(await engine),
@@ -636,6 +651,7 @@ class TantivyDataProvider {
         wordMatchMode: wordMatchMode,
         wordMatchCount: wordMatchCount,
         anyOrder: anyOrder,
+        cancelRequestId: cancelRequestId,
       ),
     );
 
