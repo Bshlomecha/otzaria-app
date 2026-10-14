@@ -9,6 +9,7 @@ import 'package:otzaria/search/search_query_builder.dart';
 import 'package:otzaria/tabs/models/searching_tab.dart';
 import 'package:otzaria/theme/app_surfaces.dart';
 import 'package:otzaria/widgets/text/rtl_text_field.dart';
+import 'package:otzaria/settings/l10n/settings_l10n_exports.dart';
 
 /// ווידג'ט לניהול אפשרויות חיפוש מתקדמות לכל מילה בנפרד.
 class AdvancedSearchControls extends StatefulWidget {
@@ -746,7 +747,9 @@ class _AdvancedSearchControlsState extends State<AdvancedSearchControls> {
       final tooltip =
           SearchQueryBuilder.wordOptionDescriptions[option] ??
           _optionTooltips[option];
-      return tooltip == null ? chip : Tooltip(message: tooltip, child: chip);
+      return tooltip == null
+          ? chip
+          : Tooltip(message: context.settingsText(tooltip), child: chip);
     }
 
     return Align(
