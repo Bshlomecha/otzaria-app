@@ -10,6 +10,8 @@ import 'package:otzaria/migration/database/daos/database.dart';
 import 'package:otzaria/migration/database/repository/seforim_repository.dart';
 import 'package:otzaria/migration/database/untrusted_database.dart';
 import 'package:otzaria/models/book_source.dart';
+import 'package:otzaria_search_engine/otzaria_search_engine.dart'
+    show configureAttachedLineSource;
 
 class _OpenLibrary {
   _OpenLibrary(this.path, this.repository);
@@ -44,6 +46,20 @@ class AttachedLibraryRegistry {
 
   /// null — בלי סגירה אוטומטית.
   final Duration? idleTimeout;
+
+  /// ניתן להחלפה בבדיקות שאינן טוענות את המנוע.
+  @visibleForTesting
+  static Future<void> Function({
+    required String slug,
+    String? dbPath,
+    required bool immutable,
+  })
+  configureEngineSource = configureAttachedLineSource;
+
+  /// מה שהוגדר במנוע לכל slug. המנוע מחזיק את הקובץ פתוח אחרי קריאה ממנו.
+  final Map<String, (String, bool)> _engineSources = {};
+  bool _engineSyncEnabled = false;
+  Future<void> _engineQueue = Future.value();
 
   List<AttachedLibrary>? _libraries;
   final Map<String, _OpenLibrary> _open = {};
@@ -93,7 +109,59 @@ class AttachedLibraryRegistry {
         _closeEntry(slug);
       }
     }
+    if (_engineSyncEnabled) unawaited(syncEngineSources());
   }
+
+  /// האם ספרי [slug] נקראים במנוע מהמסד (מקור שורות מוגדר).
+  bool isEngineSourceConfigured(String slug) =>
+      _engineSources.containsKey(slug);
+
+  /// נקרא כשהמנוע נטען: מכאן והלאה [update] ו-[syncEngineSources] מגדירים
+  /// בו את המסדים. זול — המנוע פותח את הקובץ רק בקריאה הראשונה ממנו.
+  Future<void> enableEngineSources() {
+    _engineSyncEnabled = true;
+    return syncEngineSources();
+  }
+
+  /// מגדיר במנוע את מקור השורות של כל מסד תקין ומבטל את השאר.
+  Future<void> syncEngineSources() {
+    if (!_engineSyncEnabled) return Future.value();
+    return _enqueueEngine(() async {
+      final wanted = {
+        for (final library in libraries)
+          if (library.isOk) library.slug: (library.path, library.immutable),
+      };
+      for (final slug in _engineSources.keys.toList()) {
+        if (wanted[slug] != _engineSources[slug]) await _unconfigure(slug);
+      }
+      for (final MapEntry(key: slug, value: source) in wanted.entries) {
+        if (_engineSources.containsKey(slug)) continue;
+        try {
+          await configureEngineSource(
+            slug: slug,
+            dbPath: source.$1,
+            immutable: source.$2,
+          );
+          _engineSources[slug] = source;
+        } catch (e) {
+          debugPrint('[AttachedLibraryRegistry] engine source $slug: $e');
+        }
+      }
+    });
+  }
+
+  Future<void> _unconfigure(String slug) async {
+    if (!_engineSources.containsKey(slug)) return;
+    try {
+      await configureEngineSource(slug: slug, dbPath: null, immutable: false);
+    } catch (e) {
+      debugPrint('[AttachedLibraryRegistry] engine source $slug close: $e');
+    }
+    _engineSources.remove(slug);
+  }
+
+  Future<void> _enqueueEngine(Future<void> Function() action) =>
+      _engineQueue = _engineQueue.then((_) => action());
 
   /// המאגר של מסד [slug], או null כשהמסד אינו תקין או שהקובץ אינו נגיש.
   Future<SeforimRepository?> repositoryFor(String slug) {
@@ -193,9 +261,11 @@ class AttachedLibraryRegistry {
   }
 
   /// משחרר את הקובץ של [slug] — החיבור נסגר ונשכח. גישה הבאה פותחת מחדש.
+  /// גם המנוע משחרר את הקובץ, עד הסנכרון הבא ([update] או [syncEngineSources]).
   Future<void> close(String slug) async {
     AttachedFindRefWorker.instance.reset();
     _closeEntry(slug);
+    if (_engineSyncEnabled) await _enqueueEngine(() => _unconfigure(slug));
   }
 
   /// סוגר את כל החיבורים (איפוס runtime, יציאה).
@@ -203,6 +273,13 @@ class AttachedLibraryRegistry {
     AttachedFindRefWorker.instance.reset();
     for (final slug in _open.keys.toList()) {
       _closeEntry(slug);
+    }
+    if (_engineSyncEnabled) {
+      await _enqueueEngine(() async {
+        for (final slug in _engineSources.keys.toList()) {
+          await _unconfigure(slug);
+        }
+      });
     }
     _idleTimer?.cancel();
     _idleTimer = null;

@@ -435,9 +435,17 @@ class SqliteDataProvider {
   /// מאוחים ב-`\n` — מסלול האינדוקס מעביר אותם למנוע כמות-שהם
   /// (addTextBookBytes) בלי פענוח ל-String וקידוד חוזר על גשר ה-FFI.
   /// [officialBookId] — ה-id ב-seforim.db כשהשורות נקראו משם, אחרת null.
-  /// [userBookId] — כמוהו ב-user_books.db, רק לספר שתוכנו בשורות ולא בקובץ.
-  /// שניהם null כששורה מכילה `\n`: מספרי השורות במנוע לא יתאימו לרשומות.
-  Future<({Uint8List bytes, int? officialBookId, int? userBookId})?>
+  /// [userBookId] — כמוהו ב-user_books.db, רק לספר שתוכנו בשורות ולא בקובץ;
+  /// [attachedBookId] — במסד מצורף. כולם null כששורה מכילה `\n`: מספרי
+  /// השורות במנוע לא יתאימו לרשומות.
+  Future<
+    ({
+      Uint8List bytes,
+      int? officialBookId,
+      int? userBookId,
+      int? attachedBookId,
+    })?
+  >
   getBookTextBytesFromDb(
     String title, [
     int? categoryId,
@@ -473,6 +481,7 @@ class SqliteDataProvider {
         userBookId: source.isUser && rowsAreLines && !book.isFileBacked
             ? book.id
             : null,
+        attachedBookId: source.isAttached && rowsAreLines ? book.id : null,
       );
     } catch (e, st) {
       debugPrint(

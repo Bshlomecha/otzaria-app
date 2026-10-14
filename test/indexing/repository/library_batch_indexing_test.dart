@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:otzaria/attached_libraries/models/attached_library.dart';
+import 'package:otzaria/attached_libraries/repository/attached_library_registry.dart';
 import 'package:otzaria/data/data_providers/tantivy_data_provider.dart';
 import 'package:otzaria/indexing/models/index_commit_policy.dart';
 import 'package:otzaria/indexing/repository/indexing_repository.dart';
@@ -12,8 +14,6 @@ import 'package:otzaria/models/book_source.dart';
 import 'package:otzaria/models/books.dart';
 import 'package:otzaria/search/library_line_source.dart';
 import 'package:otzaria_search_engine/otzaria_search_engine.dart';
-// ignore: implementation_imports
-import 'package:otzaria_search_engine/src/rust/api/library_indexing.dart';
 
 import 'package:path/path.dart' as p;
 
@@ -59,6 +59,26 @@ void main() {
       expect(source(personal(filePath: r'C:ooks.txt')), isNull);
     });
 
+    test('ספר ממסד מצורף שמוגדר במנוע נקרא ממנו', () {
+      final attached = TextBook(
+        id: 5,
+        title: 'א',
+        categoryId: 2,
+        source: BookSource.attached('slug'),
+      );
+      LibraryBookSource? attachedSource(Set<String> configured) =>
+          IndexingRepository.engineBookSource(
+            attached,
+            hostApiReady: true,
+            userBooksConfigured: false,
+            attachedConfigured: configured.contains,
+          );
+
+      expect(attachedSource({'slug'}), LibraryBookSource.attached);
+      expect(attachedSource({'other'}), isNull);
+      expect(attachedSource({}), isNull);
+    });
+
     test('כל השאר נשארים במסלול הרגיל', () {
       expect(
         source(TextBook(id: 5, title: 'א', categoryId: 2), ready: false),
@@ -89,6 +109,30 @@ void main() {
         source(PdfBook(id: 5, title: 'א', path: r'C:.pdf', categoryId: 2)),
         isNull,
       );
+    });
+  });
+
+  group('IndexingRepository.textStorageFor — מסד מצורף', () {
+    TextStorage decide(String key, int? id, Set<String> configured) =>
+        IndexingRepository.textStorageFor(
+          filePath: key,
+          libraryDbBookId: null,
+          userBooksDbBookId: null,
+          attachedDbBookId: id,
+          hostApiReady: true,
+          userBooksConfigured: false,
+          attachedConfigured: configured.contains,
+        );
+
+    test('שורות ממסד שמוגדר במנוע — הטקסט לא נשמר באינדקס', () {
+      expect(decide('db:s:5', 5, {'s'}), TextStorage.libraryDb);
+    });
+
+    test('מסד שאינו מוגדר, id אחר או מפתח אחר — הטקסט נשמר', () {
+      expect(decide('db:s:5', 5, {}), TextStorage.inIndex);
+      expect(decide('db:s:5', 6, {'s'}), TextStorage.inIndex);
+      expect(decide('db:s:5', null, {'s'}), TextStorage.inIndex);
+      expect(decide('id:5', 5, {'s'}), TextStorage.inIndex);
     });
   });
 
@@ -244,6 +288,49 @@ void main() {
       expect(engine.bytesFilePaths, ['uid:6']);
     });
 
+    test('ספר ממסד מצורף מוגדר נשלח לאצווה עם ה-slug', () async {
+      final registry = AttachedLibraryRegistry(idleTimeout: null);
+      final previous = AttachedLibraryRegistry.instance;
+      AttachedLibraryRegistry.instance = registry;
+      addTearDown(() => AttachedLibraryRegistry.instance = previous);
+      AttachedLibraryRegistry.configureEngineSource =
+          ({required slug, dbPath, required immutable}) async {};
+      addTearDown(
+        () => AttachedLibraryRegistry.configureEngineSource =
+            configureAttachedLineSource,
+      );
+      registry.update([
+        AttachedLibrary(
+          slug: 's',
+          displayName: 's',
+          path: 'C:/s.db',
+          addedAt: DateTime(2026),
+        ),
+      ]);
+      await registry.enableEngineSources();
+      final attached = TextBook(
+        id: 3,
+        title: 'מצורף',
+        categoryId: 1,
+        source: BookSource.attached('s'),
+      );
+      engine.statusById[3] = LibraryBookStatus.unavailable;
+
+      final result = await repository.indexAllBooks(
+        libraryOf([attached]),
+        onProgress: (_, _) {},
+      );
+
+      expect(engine.batches, [
+        ['db:s:3'],
+      ]);
+      expect(engine.batchSources['db:s:3'], LibraryBookSource.attached);
+      expect(engine.batchSlugs['db:s:3'], 's');
+      // לא זמין במנוע — נקרא במסלול הרגיל, כמו ספר רשמי.
+      expect(result.completed, isTrue);
+      expect(engine.bytesFilePaths, ['db:s:3']);
+    });
+
     test('ספר שהמנוע לא מצא חוזר למסלול הרגיל', () async {
       final books = officialBooks(3);
       engine.statusById[2] = LibraryBookStatus.missing;
@@ -377,7 +464,7 @@ void main() {
       test('ספר רשמי נחתם במנוע בלי לטעון את הטקסט ל-Dart', () async {
         final calls = <int>[];
         IndexingRepository.libraryFingerprint =
-            ({required source, required bookId, dbTitle}) async {
+            ({required source, required bookId, dbTitle, attachedSlug}) async {
               expect(source, LibraryBookSource.library_);
               calls.add(bookId);
               return BigInt.from(42);
@@ -398,7 +485,8 @@ void main() {
 
       test('ספר שהמנוע לא מצא נבדק דרך Dart כמו קודם', () async {
         IndexingRepository.libraryFingerprint =
-            ({required source, required bookId, dbTitle}) async => null;
+            ({required source, required bookId, dbTitle, attachedSlug}) async =>
+                null;
         final book = TextBook(id: 7, title: 'ז', categoryId: 1);
 
         await repository.textBookContentMatchesIndex(book, BigInt.from(1));
@@ -421,6 +509,7 @@ class _Repository extends IndexingRepository {
       String? text,
       int? libraryDbBookId,
       int? userBooksDbBookId,
+      int? attachedDbBookId,
       Uint32List? dataUriLines,
     })
   >
@@ -431,6 +520,7 @@ class _Repository extends IndexingRepository {
       text: null,
       libraryDbBookId: null,
       userBooksDbBookId: null,
+      attachedDbBookId: null,
       dataUriLines: null,
     );
   }
@@ -490,6 +580,7 @@ class _BatchEngine implements SearchEngine {
   final batchStorage = <String, TextStorage>{};
   final batchDbTitles = <String, String?>{};
   final batchSources = <String, LibraryBookSource>{};
+  final batchSlugs = <String, String?>{};
   final statusById = <int, LibraryBookStatus>{};
   final bytesFilePaths = <String>[];
   final removedFilePaths = <String>[];
@@ -530,11 +621,12 @@ class _BatchEngine implements SearchEngine {
   }
 
   LibraryBookResult _result(LibraryBookInput book, LibraryBookStatus status) {
+    batchSources[book.filePath] = book.source;
+    batchSlugs[book.filePath] = book.attachedSlug;
     if (status == LibraryBookStatus.indexed) {
       pending.add(book.filePath);
       batchStorage[book.filePath] = book.textStorage;
       batchDbTitles[book.filePath] = book.dbTitle;
-      batchSources[book.filePath] = book.source;
     }
     return LibraryBookResult(
       bookId: book.bookId,

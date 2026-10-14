@@ -3890,6 +3890,7 @@ typedef _TextBookSource = ({
   String? text,
   int? libraryDbBookId,
   int? userBooksDbBookId,
+  int? attachedDbBookId,
   Uint32List? dataUriLines,
 });
 
@@ -3911,6 +3912,7 @@ class _CancelDuringLoadRepository extends IndexingRepository {
       text: 'תוכן',
       libraryDbBookId: null,
       userBooksDbBookId: null,
+      attachedDbBookId: null,
       dataUriLines: null,
     );
   }
@@ -3957,6 +3959,7 @@ class _FakeExtractionRepository extends IndexingRepository {
       text: 'תוכן',
       libraryDbBookId: libraryDbBookIdByTitle[book.title],
       userBooksDbBookId: userBooksDbBookIdByTitle[book.title],
+      attachedDbBookId: null,
       dataUriLines: dataUriLinesByTitle[book.title],
     );
   }

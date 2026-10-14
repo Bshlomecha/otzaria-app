@@ -11,6 +11,7 @@ import 'package:otzaria/data/data_providers/user_books_database_holder.dart';
 import 'package:otzaria/search/library_line_source.dart';
 import 'package:otzaria/search/search_engine_gateway.dart';
 import 'package:otzaria/search/magic_dictionary_downloader.dart';
+import 'package:otzaria/attached_libraries/repository/attached_library_registry.dart';
 import 'package:otzaria/core/app_paths.dart';
 import 'package:otzaria/core/windowing/window_role.dart';
 import 'package:otzaria/indexing/models/index_update_mode.dart';
@@ -129,6 +130,7 @@ class TantivyDataProvider {
     if (userBooksDbPath != null) {
       await UserBooksDatabaseHolder.configureSearchLineSource(userBooksDbPath);
     }
+    await AttachedLibraryRegistry.instance.enableEngineSources();
   }
 
   /// קורא את תוצאת בדיקת התאימות מהאינדקס עצמו. כשל בבדיקה אינו עוצר את

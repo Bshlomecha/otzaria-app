@@ -288,8 +288,10 @@ class AttachedLibrariesRepository {
       });
 
   /// משחרר את נעילת הקובץ. הוא ייפתח שוב בגישה הבאה לספר ממנו.
-  Future<void> release(AttachedLibrary library) =>
-      _registry.close(library.slug);
+  Future<void> release(AttachedLibrary library) async {
+    await _registry.close(library.slug);
+    await _registry.syncEngineSources();
+  }
 
   /// מתקין קובץ מסד מעודכן במקום הקובץ של [library] (עדכון במקום, גם בקישור).
   ///
@@ -319,6 +321,7 @@ class AttachedLibrariesRepository {
     } catch (_) {
       await _registry.close(current.slug);
       await swap.restore(current.path);
+      await _registry.syncEngineSources();
       rethrow;
     }
     await swap.discardBackup(current.path);
@@ -447,7 +450,11 @@ class AttachedLibrariesRepository {
         [
           for (var i = 0; i < resolved.length; i++) before[i] != resolved[i],
         ].any((differs) => differs);
-    if (!changed) return false;
+    if (!changed) {
+      // מסד שנסגר לפני פעולת קובץ חוזר למנוע גם כשהרשימה לא השתנתה.
+      await _registry.syncEngineSources();
+      return false;
+    }
     final contentChanged = _contentChangedSlugs(before, resolved);
     await _store.saveLibraries(resolved);
     _registry.update(resolved);

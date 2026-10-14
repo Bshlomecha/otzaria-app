@@ -326,6 +326,7 @@ class _MemoryTextRepository extends IndexingRepository {
       String? text,
       int? libraryDbBookId,
       int? userBooksDbBookId,
+      int? attachedDbBookId,
       Uint32List? dataUriLines,
     })
   >
@@ -334,6 +335,7 @@ class _MemoryTextRepository extends IndexingRepository {
     text: book.source.isUser ? 'שלום\nעולם אישי' : 'שלום\nאחר רשמי',
     libraryDbBookId: null,
     userBooksDbBookId: null,
+    attachedDbBookId: null,
     dataUriLines: null,
   );
 }

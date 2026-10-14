@@ -46,8 +46,6 @@ import 'package:otzaria/utils/file/document_format.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:otzaria_search_engine/otzaria_search_engine.dart';
-// ignore: implementation_imports
-import 'package:otzaria_search_engine/src/rust/api/library_indexing.dart';
 
 export 'package:otzaria/indexing/utils/pdf_extraction_prefetcher.dart'
     show PdfExtraction;
@@ -120,6 +118,7 @@ class IndexingRepository {
     required LibraryBookSource source,
     required int bookId,
     String? dbTitle,
+    String? attachedSlug,
   })
   libraryFingerprint = libraryBookContentFingerprint;
 
@@ -814,8 +813,10 @@ class IndexingRepository {
         filePath: filePath,
         libraryDbBookId: source.libraryDbBookId,
         userBooksDbBookId: source.userBooksDbBookId,
+        attachedDbBookId: source.attachedDbBookId,
         hostApiReady: LibraryLineSource.hostApiReady,
         userBooksConfigured: LibraryLineSource.userBooksConfigured,
+        attachedConfigured: _attachedEngineSourceConfigured,
       );
       final storedLines = textStorage == TextStorage.libraryDb
           ? source.dataUriLines
@@ -863,6 +864,7 @@ class IndexingRepository {
     Book book, {
     required bool hostApiReady,
     required bool userBooksConfigured,
+    bool Function(String slug) attachedConfigured = _noAttachedSource,
   }) {
     final id = book.id;
     if (!hostApiReady || book is! TextBook || id == null) return null;
@@ -877,6 +879,9 @@ class IndexingRepository {
               key == userBookKey(id) &&
               (book.filePath?.trim().isEmpty ?? true) =>
         LibraryBookSource.userBooks,
+      AttachedBookSource(:final slug)
+          when attachedConfigured(slug) && key == attachedBookKey(slug, id) =>
+        LibraryBookSource.attached,
       _ => null,
     };
   }
@@ -885,7 +890,13 @@ class IndexingRepository {
     book,
     hostApiReady: LibraryLineSource.hostApiReady,
     userBooksConfigured: LibraryLineSource.userBooksConfigured,
+    attachedConfigured: _attachedEngineSourceConfigured,
   );
+
+  static String? _attachedSlug(Book book) => switch (book.source) {
+    AttachedBookSource(:final slug) => slug,
+    _ => null,
+  };
 
   LibraryBookInput _libraryBookInput(
     TextBook book,
@@ -893,6 +904,7 @@ class IndexingRepository {
     CatalogueOrderResolver catalogueOrder,
   ) => LibraryBookInput(
     source: source,
+    attachedSlug: _attachedSlug(book),
     bookId: book.id!,
     // כמו קריאת האפליקציה: id שעבר לספר אחר בעדכון ספרייה אינו נקרא.
     dbTitle: book.title,
@@ -1632,7 +1644,7 @@ class IndexingRepository {
   /// כשחייבים (תמונות מוטמעות, פורמט מומר, ספר בלי categoryId). משותף
   /// לאינדוקס ולאימות הטריות — כך שתי החתימות מחושבות על אותו קלט בדיוק.
   /// [libraryDbBookId] — ה-id ב-seforim.db כשהמקור הוא שורות הספר משם;
-  /// [userBooksDbBookId] — כמוהו ב-user_books.db.
+  /// [userBooksDbBookId] — כמוהו ב-user_books.db, [attachedDbBookId] — במסד מצורף.
   /// [dataUriLines] — השורות שנוקו מהן תמונות; ראו [dataUriLineOrdinals].
   @visibleForTesting
   Future<
@@ -1641,6 +1653,7 @@ class IndexingRepository {
       String? text,
       int? libraryDbBookId,
       int? userBooksDbBookId,
+      int? attachedDbBookId,
       Uint32List? dataUriLines,
     })
   >
@@ -1649,6 +1662,7 @@ class IndexingRepository {
     String? text;
     int? libraryDbBookId;
     int? userBooksDbBookId;
+    int? attachedDbBookId;
     Uint32List? dataUriLines;
     if (book.categoryId != null) {
       final fromDb = await SqliteDataProvider.instance.getBookTextBytesFromDb(
@@ -1660,6 +1674,7 @@ class IndexingRepository {
       bytes = fromDb?.bytes;
       libraryDbBookId = fromDb?.officialBookId;
       userBooksDbBookId = fromDb?.userBookId;
+      attachedDbBookId = fromDb?.attachedBookId;
       // ניקוי תמונות מוטמעות חייב לרוץ בשני הצדדים — אחרת חתימת האינדוקס
       // לעולם לא תתאים לאימות ו-reconcile יאנדקס את הספר מחדש בכל ריצה.
       if (bytes != null) {
@@ -1676,6 +1691,7 @@ class IndexingRepository {
     if ((bytes == null || bytes.isEmpty) && (text == null || text.isEmpty)) {
       libraryDbBookId = null;
       userBooksDbBookId = null;
+      attachedDbBookId = null;
       dataUriLines = null;
       text = await _loadTextForIndex(book);
     }
@@ -1684,6 +1700,7 @@ class IndexingRepository {
       text: text,
       libraryDbBookId: libraryDbBookId,
       userBooksDbBookId: userBooksDbBookId,
+      attachedDbBookId: attachedDbBookId,
       dataUriLines: dataUriLines,
     );
   }
@@ -1878,16 +1895,17 @@ class IndexingRepository {
     return '$title|${categoryKey ?? ''}|${fileTypeKey ?? ''}|${pathKey ?? ''}';
   }
 
-  /// [TextStorage.libraryDb] רק לשורות ספר מ-seforim.db שמפתחו `id:<אותו id>`,
-  /// או מ-user_books.db שמפתחו `uid:<אותו id>`, וכשהמנוע יכול לקרוא את המסד
-  /// הזה; אחרת הטקסט נשמר באינדקס.
+  /// [TextStorage.libraryDb] רק לשורות ספר שמפתחו `id:`/`uid:`/`db:<slug>:` של
+  /// אותו id, כשהמנוע קורא את המסד הזה; אחרת הטקסט נשמר באינדקס.
   @visibleForTesting
   static TextStorage textStorageFor({
     required String filePath,
     required int? libraryDbBookId,
     required int? userBooksDbBookId,
+    int? attachedDbBookId,
     required bool hostApiReady,
     required bool userBooksConfigured,
+    bool Function(String slug) attachedConfigured = _noAttachedSource,
   }) {
     if (!hostApiReady) return TextStorage.inIndex;
     if (libraryDbBookId != null &&
@@ -1899,8 +1917,20 @@ class IndexingRepository {
         filePath == userBookKey(userBooksDbBookId)) {
       return TextStorage.libraryDb;
     }
+    final slug = attachedSlugOfKey(filePath);
+    if (slug != null &&
+        attachedDbBookId != null &&
+        attachedConfigured(slug) &&
+        filePath == attachedBookKey(slug, attachedDbBookId)) {
+      return TextStorage.libraryDb;
+    }
     return TextStorage.inIndex;
   }
+
+  static bool _noAttachedSource(String slug) => false;
+
+  static bool _attachedEngineSourceConfigured(String slug) =>
+      AttachedLibraryRegistry.instance.isEngineSourceConfigured(slug);
 
   /// מפתח catalogueOrderKey לספר אישי (user_books.db) לפי id גולמי.
   static String userBookKey(int id) => 'uid:$id';
@@ -1981,6 +2011,7 @@ class IndexingRepository {
         final hash = await libraryFingerprint(
           source: engineSource,
           bookId: book.id!,
+          attachedSlug: _attachedSlug(book),
           dbTitle: book.title,
         );
         if (hash != null) return hash == indexHash;
