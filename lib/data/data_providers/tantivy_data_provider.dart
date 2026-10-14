@@ -34,7 +34,10 @@ class TantivyDataProvider {
   };
 
   /// Instance of the search engine pointing to the index directory
-  Future<SearchEngine> get engine => _engineInit.ensure(_initAll);
+  Future<SearchEngine> get engine {
+    AttachedLibraryRegistry.instance.noteEngineUse();
+    return _engineInit.ensure(_initAll);
+  }
 
   set engine(Future<SearchEngine> value) => _engineInit.current = value;
 

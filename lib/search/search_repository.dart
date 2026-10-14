@@ -1,3 +1,4 @@
+import 'package:otzaria/attached_libraries/repository/attached_library_registry.dart';
 import 'package:otzaria/data/data_providers/tantivy_data_provider.dart';
 import 'package:otzaria/search/search_engine_gateway.dart';
 import 'package:otzaria_search_engine/otzaria_search_engine.dart';
@@ -32,9 +33,9 @@ class SearchRepository {
     final provider = _engineProvider;
     if (provider != null) return provider();
 
-    return RustSearchEngineOperations(
-      await TantivyDataProvider.instance.engine,
-    );
+    final engine = await TantivyDataProvider.instance.engine;
+    await AttachedLibraryRegistry.instance.engineSourcesSettled;
+    return RustSearchEngineOperations(engine);
   }
 
   Future<SemanticSearchEngineOperations> _semanticEngine() async {

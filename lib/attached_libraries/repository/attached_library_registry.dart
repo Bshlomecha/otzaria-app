@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 import 'package:otzaria/attached_libraries/models/attached_library.dart';
 import 'package:otzaria/attached_libraries/repository/attached_library_store.dart';
+import 'package:otzaria/core/windowing/window_role.dart';
 import 'package:otzaria/find_ref/repository/attached_find_ref_worker.dart';
 import 'package:otzaria/migration/database/daos/database.dart';
 import 'package:otzaria/migration/database/repository/seforim_repository.dart';
@@ -47,6 +48,18 @@ class AttachedLibraryRegistry {
   /// null — בלי סגירה אוטומטית.
   final Duration? idleTimeout;
 
+  /// חלון משני מחזיק את הקובץ בתהליך נפרד, שהסרה או עדכון בחלון הראשי אינם
+  /// יכולים לשחרר — לכן שם הוא משוחרר מהר יותר.
+  static const secondaryWindowIdleTimeout = Duration(seconds: 30);
+
+  Duration? get _idleTimeout {
+    final timeout = idleTimeout;
+    if (timeout == null || !WindowRole.isSecondary) return timeout;
+    return timeout < secondaryWindowIdleTimeout
+        ? timeout
+        : secondaryWindowIdleTimeout;
+  }
+
   /// ניתן להחלפה בבדיקות שאינן טוענות את המנוע.
   @visibleForTesting
   static Future<void> Function({
@@ -60,6 +73,9 @@ class AttachedLibraryRegistry {
   final Map<String, (String, bool)> _engineSources = {};
   bool _engineSyncEnabled = false;
   Future<void> _engineQueue = Future.value();
+
+  /// null — המנוע לא נגע במסדים מאז ששוחררו.
+  DateTime? _lastEngineUse;
 
   List<AttachedLibrary>? _libraries;
   final Map<String, _OpenLibrary> _open = {};
@@ -147,6 +163,9 @@ class AttachedLibraryRegistry {
           debugPrint('[AttachedLibraryRegistry] engine source $slug: $e');
         }
       }
+      if (_lastEngineUse != null && _engineSources.isNotEmpty) {
+        _scheduleIdleCheck();
+      }
     });
   }
 
@@ -159,6 +178,35 @@ class AttachedLibraryRegistry {
     }
     _engineSources.remove(slug);
   }
+
+  /// נקרא בכל גישה למנוע. מסד שהמנוע לא נגע בו [idleTimeout] משוחרר בו,
+  /// ונשאר מוגדר — המנוע יפתח אותו שוב בקריאה הבאה.
+  void noteEngineUse() {
+    _lastEngineUse = DateTime.now();
+    if (_engineSources.isNotEmpty) _scheduleIdleCheck();
+  }
+
+  /// מסתיים אחרי כל שינוי שכבר נשלח למנוע — חיפוש שממתין לו לא יקרא מסד
+  /// באמצע שחרור.
+  Future<void> get engineSourcesSettled => _engineQueue;
+
+  // הגדרה מחדש של אותו נתיב אינה סוגרת חיבור פתוח במנוע — רק null ואז הנתיב.
+  Future<void> _releaseEngineFiles() => _enqueueEngine(() async {
+    for (final MapEntry(key: slug, value: source)
+        in _engineSources.entries.toList()) {
+      try {
+        await configureEngineSource(slug: slug, dbPath: null, immutable: false);
+        await configureEngineSource(
+          slug: slug,
+          dbPath: source.$1,
+          immutable: source.$2,
+        );
+      } catch (e) {
+        debugPrint('[AttachedLibraryRegistry] engine source $slug release: $e');
+        _engineSources.remove(slug);
+      }
+    }
+  });
 
   Future<void> _enqueueEngine(Future<void> Function() action) =>
       _engineQueue = _engineQueue.then((_) => action());
@@ -237,7 +285,7 @@ class AttachedLibraryRegistry {
       });
 
   void _scheduleIdleCheck() {
-    final timeout = idleTimeout;
+    final timeout = _idleTimeout;
     if (timeout == null || _idleTimer != null) return;
     _idleTimer = Timer.periodic(timeout ~/ 2, (_) => closeIdle());
   }
@@ -246,7 +294,7 @@ class AttachedLibraryRegistry {
   /// ייפתח מחדש בשאילתה הבאה.
   @visibleForTesting
   void closeIdle({DateTime? now}) {
-    final timeout = idleTimeout;
+    final timeout = _idleTimeout;
     if (timeout == null) return;
     final cutoff = (now ?? DateTime.now()).subtract(timeout);
     for (final entry in _open.values) {
@@ -254,7 +302,12 @@ class AttachedLibraryRegistry {
         entry.repository.database.close();
       }
     }
-    if (_open.values.every((e) => !e.repository.database.isOpen)) {
+    if (_lastEngineUse?.isBefore(cutoff) ?? false) {
+      _lastEngineUse = null;
+      unawaited(_releaseEngineFiles());
+    }
+    if (_lastEngineUse == null &&
+        _open.values.every((e) => !e.repository.database.isOpen)) {
       _idleTimer?.cancel();
       _idleTimer = null;
     }
@@ -281,6 +334,7 @@ class AttachedLibraryRegistry {
         }
       });
     }
+    _lastEngineUse = null;
     _idleTimer?.cancel();
     _idleTimer = null;
   }
