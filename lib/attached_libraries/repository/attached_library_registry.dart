@@ -289,6 +289,8 @@ class AttachedLibraryRegistry {
   Future<void> reset() async {
     await closeAll();
     _libraries = null;
+    // המנוע אינו מאותחל מחדש באיפוס; בלי זה ספרי המסדים לא זמינים עד שינוי ברשימה.
+    await syncEngineSources();
   }
 
   /// המאגרים שהחיבור שלהם פתוח כרגע — בלי לפתוח מסד שעדיין סגור.

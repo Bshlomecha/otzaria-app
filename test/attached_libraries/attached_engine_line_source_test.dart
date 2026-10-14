@@ -111,6 +111,20 @@ void main() {
     expect(calls, ['a=a.db', 'a=null', 'a=a.db']);
   });
 
+  test(
+    'איפוס runtime: המסדים מוגדרים במנוע מחדש מיד, בלי שינוי ברשימה',
+    () async {
+      final repository = build();
+      await repository.importFile(fixture('a'));
+      await registry.enableEngineSources();
+
+      await registry.reset();
+
+      expect(calls, ['a=a.db', 'a=null', 'a=a.db']);
+      expect(registry.isEngineSourceConfigured('a'), isTrue);
+    },
+  );
+
   group('עדכון קובץ המסד', () {
     test('המנוע משחרר לפני ההחלפה ומוגדר מחדש אחריה', () async {
       final repository = build();
