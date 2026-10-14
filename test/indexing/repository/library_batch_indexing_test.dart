@@ -415,6 +415,21 @@ void main() {
       expect(engine.batches.length, 1);
     });
 
+    test('שני ספרים עם אותו מפתח — הספר נשלח לאצווה פעם אחת', () async {
+      final books = [
+        TextBook(id: 1, title: 'ספר', categoryId: 1),
+        TextBook(id: 1, title: 'ספר', categoryId: 2),
+        TextBook(id: 2, title: 'אחר', categoryId: 1),
+      ];
+
+      await repository.indexAllBooks(libraryOf(books), onProgress: (_, _) {});
+
+      expect(engine.batches, [
+        ['id:1', 'id:2'],
+      ]);
+      expect(provider.indexedFilePaths, {'id:1', 'id:2'});
+    });
+
     test('ספרים מעבר לגודל האצווה נשלחים באצוות נוספות', () async {
       final books = officialBooks(20);
 

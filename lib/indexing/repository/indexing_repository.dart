@@ -938,15 +938,22 @@ class IndexingRepository {
       // אחרי קריסה מאנדקסים ספר-ספר, כדי שרק האשם ייספר.
       final limit = canary?.recovering ?? false ? 1 : batches.sizer.size;
       final picked = <(TextBook, LibraryBookSource)>[];
+      final pickedKeys = <String>{};
       for (var i = start; i < books.length && picked.length < limit; i++) {
         final book = books[i];
-        if (batches.handled.contains(book) || isBookIndexed(book)) continue;
+        final key = buildIndexedBookFilePath(book);
+        if (batches.handled.contains(book) ||
+            isBookIndexed(book) ||
+            pickedKeys.contains(key)) {
+          continue;
+        }
         final source = _engineBookSource(book);
         if (source == null ||
             batches.attempted.contains(book) ||
-            canary?.begin(buildIndexedBookFilePath(book)) == false) {
+            canary?.begin(key) == false) {
           break;
         }
+        pickedKeys.add(key);
         picked.add((book as TextBook, source));
       }
       if (picked.isEmpty) break;
