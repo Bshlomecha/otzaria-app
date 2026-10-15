@@ -180,6 +180,7 @@ class IndexingRepository {
     final normalized = message.toLowerCase();
     final kind = switch (sourceError) {
       IndexingCrashedBefore _ => IndexingFailureKind.crashedApp,
+      _LibraryBatchCleanupFailure _ => IndexingFailureKind.engineWrite,
       final RangeError rangeError
           when rangeError.invalidValue == -1 && rangeError.end == 3 =>
         IndexingFailureKind.pdfUnsupported,
@@ -709,8 +710,9 @@ class IndexingRepository {
           );
           if (handled) {
             commitPolicy.recordBook();
-          } else if (!isBookIndexed(book) &&
-              !await _discardPartialBookWrites(book)) {
+          } else if (e is _LibraryBatchCleanupFailure ||
+              (!isBookIndexed(book) &&
+                  !await _discardPartialBookWrites(book))) {
             // ניקוי כושל ⇒ commit היה חותם ספר חלקי; משליכים את כל החוצץ
             // ועוצרים בלי commit — מה שלא נחתם ינוסה שוב בריצה הבאה.
             await _recoverEngineAfterWriteFailure();
@@ -983,11 +985,15 @@ class IndexingRepository {
         // ספר-ספר, ומחיקה שנכשלה עוצרת את הריצה כמו כשל כתיבה של ספר.
         debugPrint('⚠️ אצוות ספרייה נכשלה, חוזרים לאינדוקס ספר-ספר: $error');
         batches.disabled = true;
-        await engine.deleteDocumentsByFilePaths(
-          filePaths: [
-            for (final (book, _) in picked) buildIndexedBookFilePath(book),
-          ],
-        );
+        try {
+          await engine.deleteDocumentsByFilePaths(
+            filePaths: [
+              for (final (book, _) in picked) buildIndexedBookFilePath(book),
+            ],
+          );
+        } catch (error) {
+          throw _LibraryBatchCleanupFailure(error);
+        }
         break;
       } finally {
         _libraryBatchToken = null;
@@ -2200,8 +2206,9 @@ class IndexingRepository {
             failures,
           );
           if (!handled &&
-              !isBookIndexed(book) &&
-              !await _discardPartialBookWrites(book)) {
+              (e is _LibraryBatchCleanupFailure ||
+                  (!isBookIndexed(book) &&
+                      !await _discardPartialBookWrites(book)))) {
             // ניקוי כושל ⇒ commit היה חותם ספר חלקי; משליכים את כל החוצץ
             // ועוצרים בלי commit — מה שלא נחתם ינוסה שוב בריצה הבאה.
             await _recoverEngineAfterWriteFailure();
@@ -2854,6 +2861,14 @@ class IndexingRepository {
   bool isIndexing() {
     return _tantivyDataProvider.isIndexing.value;
   }
+}
+
+class _LibraryBatchCleanupFailure implements Exception {
+  const _LibraryBatchCleanupFailure(this.cause);
+  final Object cause;
+
+  @override
+  String toString() => cause.toString();
 }
 
 /// מצב אצוות הספרייה לאורך ריצת אינדוקס אחת.

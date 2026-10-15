@@ -669,8 +669,9 @@ class BackupService {
     final staged = File('$dbPath.restore');
     try {
       await staged.writeAsBytes(bytes, flush: true);
+      await Isolate.run(() => _validateUserBooksDb(staged.path));
     } catch (e) {
-      _logger.warning('Failed to stage user_books.db: $e');
+      _logger.warning('Failed to stage or validate user_books.db: $e');
       return _discardStaged(staged);
     }
     // התור ממתין לסנכרון תיקיות או לעדכון שרץ, וחוסם חדשים עד סוף ההחלפה.
@@ -704,6 +705,21 @@ class BackupService {
       );
     }
     return _UserBooksRestore.restored;
+  }
+
+  static void _validateUserBooksDb(String path) {
+    final db = sqlite3.sqlite3.open(path, mode: sqlite3.OpenMode.readOnly);
+    try {
+      final check = db.select('PRAGMA quick_check');
+      if (check.length != 1 || check.single.values.single != 'ok') {
+        throw const FormatException('user_books.db בגיבוי אינו תקין');
+      }
+      db.select('SELECT id, title, categoryId, sourceId FROM book LIMIT 0');
+      db.select('SELECT id, title, parentId FROM category LIMIT 0');
+      db.select('SELECT id, bookId, lineIndex, content FROM line LIMIT 0');
+    } finally {
+      db.close();
+    }
   }
 
   static Future<_UserBooksRestore> _discardStaged(File staged) async {

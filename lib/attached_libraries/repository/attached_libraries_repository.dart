@@ -311,9 +311,9 @@ class AttachedLibrariesRepository {
       throw FileSystemException('library is no longer attached', library.path);
     }
     await _registry.close(current.slug);
-    await swap.swapIn(current.path, stagedPath);
     final AttachedLibraryProbeResult result;
     try {
+      await swap.swapIn(current.path, stagedPath);
       result = await _probe(current.path);
       if (!result.isOk || !accept(result)) {
         throw const AttachedUpdateVerificationFailed();
@@ -321,8 +321,9 @@ class AttachedLibrariesRepository {
     } catch (_) {
       await _registry.close(current.slug);
       await swap.restore(current.path);
-      await _registry.syncEngineSources();
       rethrow;
+    } finally {
+      await _registry.syncEngineSources();
     }
     await swap.discardBackup(current.path);
     // [accept] checked the key and library_id, so a moved manifest URL is

@@ -128,6 +128,52 @@ void main() {
   );
 
   group('עדכון קובץ המסד', () {
+    test('כשל נעילה בהחלפה מחזיר את מקור השורות של המסד הקיים', () async {
+      final repository = build();
+      final library = (await repository.importFile(fixture('a'))).library!;
+      await registry.enableEngineSources();
+      final original = await File(library.path).readAsBytes();
+
+      await expectLater(
+        repository.installUpdate(
+          library,
+          fixture('staged'),
+          accept: (_) => true,
+          swap: const _LockedSwap(),
+        ),
+        throwsA(isA<AttachedUpdateFileLocked>()),
+      );
+
+      expect(await File(library.path).readAsBytes(), original);
+      expect(registry.isEngineSourceConfigured(library.slug), isTrue);
+      expect(calls, ['a=a.db', 'a=null', 'a=a.db']);
+    });
+
+    test('כשל אחרי הזזת המסד משחזר את הקובץ ואת מקור השורות', () async {
+      final repository = build();
+      final library = (await repository.importFile(fixture('a'))).library!;
+      await registry.enableEngineSources();
+      final original = await File(library.path).readAsBytes();
+
+      await expectLater(
+        repository.installUpdate(
+          library,
+          p.join(tempDir.path, 'missing.db'),
+          accept: (_) => true,
+          swap: const AttachedUpdateFileSwap(lockRetries: 0),
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+
+      expect(await File(library.path).readAsBytes(), original);
+      expect(
+        File(AttachedUpdateFileSwap.backupPathFor(library.path)).existsSync(),
+        isFalse,
+      );
+      expect(registry.isEngineSourceConfigured(library.slug), isTrue);
+      expect(calls, ['a=a.db', 'a=null', 'a=a.db']);
+    });
+
     test('המנוע משחרר לפני ההחלפה ומוגדר מחדש אחריה', () async {
       final repository = build();
       final library = (await repository.importFile(fixture('a'))).library!;
@@ -272,4 +318,12 @@ class _RecordingSwap extends AttachedUpdateFileSwap {
 
   @override
   Future<void> discardBackup(String target) async {}
+}
+
+class _LockedSwap extends AttachedUpdateFileSwap {
+  const _LockedSwap();
+
+  @override
+  Future<void> swapIn(String target, String staged) async =>
+      throw AttachedUpdateFileLocked(target);
 }

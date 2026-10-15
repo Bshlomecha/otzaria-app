@@ -8,6 +8,7 @@ import 'package:otzaria/attached_libraries/models/attached_library.dart';
 import 'package:otzaria/attached_libraries/repository/attached_library_registry.dart';
 import 'package:otzaria/data/data_providers/tantivy_data_provider.dart';
 import 'package:otzaria/indexing/models/index_commit_policy.dart';
+import 'package:otzaria/indexing/models/indexing_run_result.dart';
 import 'package:otzaria/indexing/repository/indexing_repository.dart';
 import 'package:otzaria/library/models/library.dart';
 import 'package:otzaria/models/book_source.dart';
@@ -415,6 +416,51 @@ void main() {
       expect(engine.batches.length, 1);
     });
 
+    for (final specificBooks in [false, true]) {
+      test('כשל בניקוי אצווה משליך את כל החוצץ ועוצר '
+          '(${specificBooks ? 'indexBooks' : 'indexAllBooks'})', () async {
+        final previous = TextBook(
+          id: 9,
+          title: 'קודם',
+          source: BookSource.user,
+        );
+        final existing = officialBooks(1, firstId: 99).single;
+        final books = [previous, ...officialBooks(2), existing];
+        final library = libraryOf(books);
+        provider.indexedFilePaths.add('id:99');
+        engine.committedFilePaths.add('id:99');
+        engine.batchError = StateError('writer failed after partial batch');
+        engine.partialBatchBooks = 2;
+        engine.batchDeleteError = StateError('batch cleanup failed');
+
+        Future<IndexingRunResult> run() => specificBooks
+            ? repository.indexBooks(books, library, onProgress: (_, _) {})
+            : repository.indexAllBooks(library, onProgress: (_, _) {});
+
+        final result = await run();
+
+        expect(result.cancelled, isTrue);
+        expect(result.failures.single.kind, IndexingFailureKind.engineWrite);
+        expect(result.failures.single.isRetryable, isTrue);
+        expect(engine.rollbackCount, 1);
+        expect(provider.reopenCount, 1);
+        expect(engine.commitCount, 0);
+        expect(engine.pending, isEmpty);
+        expect(engine.committedFilePaths, {'id:99'});
+        expect(provider.indexedFilePaths, {'id:99'});
+        expect(engine.bytesFilePaths, ['uid:9']);
+        await IndexingRepository.whenIdle();
+
+        engine.batchError = null;
+        engine.batchDeleteError = null;
+        final retried = await run();
+        expect(retried.isClean, isTrue);
+        expect(engine.committedFilePaths, {'uid:9', 'id:1', 'id:2', 'id:99'});
+        expect(provider.indexedFilePaths, engine.committedFilePaths);
+        expect(engine.duplicateWrites, isEmpty);
+      });
+    }
+
     test('שני ספרים עם אותו מפתח — הספר נשלח לאצווה פעם אחת', () async {
       final books = [
         TextBook(id: 1, title: 'ספר', categoryId: 1),
@@ -559,6 +605,17 @@ class _Provider implements TantivyDataProvider {
   _Provider(this._engine);
 
   final _BatchEngine _engine;
+  int reopenCount = 0;
+
+  @override
+  Future<bool> reopenIndex({bool force = false}) async {
+    expect(force, isTrue);
+    reopenCount++;
+    indexedFilePaths
+      ..clear()
+      ..addAll(await _engine.getIndexedFilePaths());
+    return true;
+  }
 
   @override
   bool isTempFallback = false;
@@ -604,6 +661,10 @@ class _BatchEngine implements SearchEngine {
   int commitCount = 0;
   int openWriterCalls = 0;
   Object? batchError;
+  Object? batchDeleteError;
+  int partialBatchBooks = 1;
+  int rollbackCount = 0;
+  final duplicateWrites = <String>[];
 
   /// נקרא בתוך האצווה; מחזיר כמה ספרים נוספו לפני העצירה.
   int Function(IndexingCancellationToken token, List<LibraryBookInput> inputs)?
@@ -620,7 +681,9 @@ class _BatchEngine implements SearchEngine {
     batches.add([for (final book in books) book.filePath]);
     final error = batchError;
     if (error != null) {
-      pending.addAll(books.take(1).map((book) => book.filePath));
+      pending.addAll(
+        books.take(partialBatchBooks).map((book) => book.filePath),
+      );
       throw error;
     }
     final addedBeforeStop = duringBatch?.call(cancel, books) ?? books.length;
@@ -665,6 +728,7 @@ class _BatchEngine implements SearchEngine {
     required TextStorage textStorage,
     Uint32List? storedLines,
   }) async {
+    if (pending.contains(filePath)) duplicateWrites.add(filePath);
     bytesFilePaths.add(filePath);
     pending.add(filePath);
     return 1;
@@ -674,6 +738,9 @@ class _BatchEngine implements SearchEngine {
   Future<void> deleteDocumentsByFilePaths({
     required List<String> filePaths,
   }) async {
+    if (filePaths.length > 1 && batchDeleteError != null) {
+      throw batchDeleteError!;
+    }
     removedFilePaths.addAll(filePaths);
     pending.removeAll(filePaths);
   }
@@ -687,6 +754,12 @@ class _BatchEngine implements SearchEngine {
 
   @override
   Future<void> optimize() async {}
+
+  @override
+  Future<void> rollback() async {
+    rollbackCount++;
+    pending.clear();
+  }
 
   @override
   Future<List<String>> getIndexedFilePaths() async =>
