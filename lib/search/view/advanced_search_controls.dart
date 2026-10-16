@@ -13,6 +13,25 @@ import 'package:otzaria/settings/l10n/settings_l10n_exports.dart';
 
 /// ווידג'ט לניהול אפשרויות חיפוש מתקדמות לכל מילה בנפרד.
 class AdvancedSearchControls extends StatefulWidget {
+  /// הסברים לאפשרויות שהמשמעות שלהן אינה מובנת מהשם לבדו.
+  @visibleForTesting
+  static const Map<String, String> optionTooltips = {
+    SearchQueryBuilder.matchNikudOptionKey:
+        'התאמת ניקוד: ניקוד שיוקלד במילה יידרש להופיע בטקסט. החיפוש מוגבל לטקסטים מנוקדים.',
+    SearchQueryBuilder.matchTaamimOptionKey:
+        'התאמת טעמי המקרא: טעם שיוקלד במילה יידרש להופיע בטקסט. החיפוש מוגבל לטקסטים מוטעמים.',
+    'קידומות ארמיות':
+        'קידומות ארמיות (ד/כד/מד/אד...) לפני המילה: מלכא ימצא גם דמלכא, כדמלכא.',
+    'סיומות ארמיות':
+        'שקילות אות סופית ארמית: ה↔א (מלכה↔מלכא) ו-ם↔ן (חכמים↔חכמין).',
+    'התעלם מגרשיים':
+        'גרש/גרשיים שהוקלדו במילה לא יידרשו בטקסט: רמב"ם ימצא גם רמבם, ולהפך.',
+    'תרגום ארמי':
+        'הרחבת המילה בתרגומיה מהמילון הארמי-עברי, בשני הכיוונים (איתא↔יש).',
+    'ראשי תיבות':
+        'פענוח ראשי-תיבות בשני הכיוונים: רמב"ם ימצא גם "רבי משה בן מיימון", ולהפך. פועל כשהשאילתה היא ראשי-התיבות או הפענוח בשלמותו.',
+  };
+
   final SearchingTab tab;
   final VoidCallback? onEmptySubmit;
   final ValueNotifier<bool>? inputFocusNotifier;
@@ -673,24 +692,6 @@ class _AdvancedSearchControlsState extends State<AdvancedSearchControls> {
     }
   }
 
-  /// הסברים לאפשרויות שהמשמעות שלהן אינה מובנת מהשם לבדו.
-  static const Map<String, String> _optionTooltips = {
-    SearchQueryBuilder.matchNikudOptionKey:
-        'התאמת ניקוד: ניקוד שיוקלד במילה יידרש להופיע בטקסט. החיפוש מוגבל לטקסטים מנוקדים.',
-    SearchQueryBuilder.matchTaamimOptionKey:
-        'התאמת טעמי המקרא: טעם שיוקלד במילה יידרש להופיע בטקסט. החיפוש מוגבל לטקסטים מוטעמים.',
-    'קידומות ארמיות':
-        'קידומות ארמיות (ד/כד/מד/אד...) לפני המילה: מלכא ימצא גם דמלכא, כדמלכא.',
-    'סיומות ארמיות':
-        'שקילות אות סופית ארמית: ה↔א (מלכה↔מלכא) ו-ם↔ן (חכמים↔חכמין).',
-    'התעלם מגרשיים':
-        'גרש/גרשיים שהוקלדו במילה לא יידרשו בטקסט: רמב"ם ימצא גם רמבם, ולהפך.',
-    'תרגום ארמי':
-        'הרחבת המילה בתרגומיה מהמילון הארמי-עברי, בשני הכיוונים (איתא↔יש).',
-    'ראשי תיבות':
-        'פענוח ראשי-תיבות בשני הכיוונים: רמב"ם ימצא גם "רבי משה בן מיימון", ולהפך. פועל כשהשאילתה היא ראשי-התיבות או הפענוח בשלמותו.',
-  };
-
   /// תיבות אפשרויות המילה כ-FilterChips — אותו מראה כמו בחיפוש הרגיל.
   /// במצב גלובלי הסימון חל על כל המילים; במצב פר-מילה על המילה הנבחרת.
   Widget _buildOptionChips(bool isEnabled) {
@@ -746,7 +747,7 @@ class _AdvancedSearchControlsState extends State<AdvancedSearchControls> {
       );
       final tooltip =
           SearchQueryBuilder.wordOptionDescriptions[option] ??
-          _optionTooltips[option];
+          AdvancedSearchControls.optionTooltips[option];
       return tooltip == null
           ? chip
           : Tooltip(message: context.settingsText(tooltip), child: chip);
