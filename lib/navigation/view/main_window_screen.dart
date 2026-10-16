@@ -1325,7 +1325,6 @@ class MainWindowScreenState extends State<MainWindowScreen>
   Future<void> _processPendingExternalActivations() =>
       _externalActivationDrainRunner.run();
 
-
   Future<void> _drainPendingExternalActivations() async {
     if (!mounted) return;
     try {

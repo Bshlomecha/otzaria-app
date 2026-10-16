@@ -4,6 +4,7 @@
 //
 // הרצה: flutter test integration_test/external_line_text_test.dart -d <device>
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -401,10 +402,11 @@ void main() {
     );
     await LibraryLineSource.configure(libraryPath);
 
-    // מילון ה-fixture; העותק האמיתי (2MB) מגיע מ-seforim.db בזמן ריצה.
-    final dictionary = File(
-      'test/fixtures/line_content_codec/dict.zdict',
-    ).readAsBytesSync();
+    // במכשיר אין קבצי מאגר; ה-CI מטמיע את מילון הבדיקה דרך dart-define.
+    const bundledDictionary = String.fromEnvironment('OTZARIA_TEST_ZSTD_DICT');
+    final dictionary = bundledDictionary.isEmpty
+        ? File('test/fixtures/line_content_codec/dict.zdict').readAsBytesSync()
+        : base64Decode(bundledDictionary);
     final encoder = LineContentEncoder(dictionary);
     addTearDown(encoder.dispose);
 
