@@ -81,6 +81,9 @@ import 'package:otzaria/text_book/utils/link_preview_utils.dart';
 import 'package:otzaria/text_book/utils/numbered_note_markers.dart';
 import 'package:otzaria/widgets/misc/link_preview_overlay.dart';
 import 'package:otzaria/text_book/utils/note_inline_render.dart';
+import 'package:otzaria/text_book/utils/mikra_citation.dart';
+import 'package:otzaria/text_book/utils/mikra_selection.dart';
+import 'package:otzaria/text_book/utils/mikra_structure.dart';
 import 'package:otzaria/text_book/utils/reading_segments.dart';
 import 'package:otzaria/text_book/utils/reading_segment_navigation.dart';
 import 'package:otzaria/text_book/utils/section_search_utils.dart';
@@ -1326,7 +1329,7 @@ class _CombinedViewState extends State<CombinedView> {
       );
     }
 
-    final source = SourceSelection.resolve(
+    final source = _resolveSource(
       _sourceSelection,
       selectedText,
       _selectionStartColumn,
@@ -1430,12 +1433,15 @@ class _CombinedViewState extends State<CombinedView> {
           lineStart: _selectionLineStart,
           lineEnd: _selectionLineEnd,
           startColumn: source.column,
-          pointerColumn: SourceSelection.resolvePointerColumn(
-            _sourceSelection,
-            selectedText,
-            _selectionPointerColumn,
-            lineStart: _selectionLineStart,
-            pointerLineIndex: _selectionPointerLineIndex,
+          pointerColumn: _sourceColumn(
+            SourceSelection.resolvePointerColumn(
+              _sourceSelection,
+              selectedText,
+              _selectionPointerColumn,
+              lineStart: _selectionLineStart,
+              pointerLineIndex: _selectionPointerLineIndex,
+            ),
+            _selectionLineStart,
           ),
         ),
         settings: () => _selectionRenderSettings(
@@ -1482,7 +1488,7 @@ class _CombinedViewState extends State<CombinedView> {
 
     ErrorReportHelper.showErrorReportDialog(
       context: context,
-      selectedText: SourceSelection.resolve(
+      selectedText: _resolveSource(
         _sourceSelection,
         selectedText,
         null,
@@ -1517,12 +1523,15 @@ class _CombinedViewState extends State<CombinedView> {
   }) async {
     if (index < 0 || index >= widget.data.length) return;
 
-    final text = widget.data[index];
-    if (text.trim().isEmpty) return;
-
     final settingsState = context.read<SettingsBloc>().state;
     final textBookState = context.read<TextBookBloc>().state;
     final loaded = textBookState is TextBookLoaded ? textBookState : null;
+    // במקרא ההעתקה כמו התצוגה: בלי מספר הפסוק ובלי {פ} ו-{ס}.
+    final mikra = loaded == null ? null : _mikraOf(loaded);
+    final text = mikra == null
+        ? widget.data[index]
+        : mikraCopyHtml(widget.data[index]);
+    if (text.trim().isEmpty) return;
 
     await copyParagraphToClipboard(
       processedText: profile != null
@@ -1537,6 +1546,9 @@ class _CombinedViewState extends State<CombinedView> {
       fontFamily: settingsState.fontFamily,
       fontSize: widget.textSize,
       plainTextOnly: plainTextOnly,
+      sourceCitation: loaded == null
+          ? null
+          : _torahCitation(loaded, settingsState, widget.data),
     );
   }
 
@@ -1622,10 +1634,21 @@ class _CombinedViewState extends State<CombinedView> {
       final textBookState = context.read<TextBookBloc>().state;
       if (textBookState is! TextBookLoaded) return;
 
+      final mikra = _mikraOf(textBookState);
       await copySelectedTextForBook(
         plainText: plainText,
         selectedIndex: _currentSelectedIndex.value,
-        sourceContent: widget.data,
+        sourceContent: mikra == null
+            ? widget.data
+            : mikraCopyContent(widget.data, _currentSelectedIndex.value),
+        // הכותרות (שם הספר והפרק) נגזרות מהשורות המקוריות.
+        headerContentOverride: mikra == null ? null : widget.data,
+        plainTextFilter: mikra == null ? null : mikraCopyText,
+        sourceCitation: _torahCitation(
+          textBookState,
+          settingsState,
+          widget.data,
+        ),
         textBookState: textBookState,
         segmentCount: selectionSegmentCount(
           start: _selectionLineStart,
@@ -1656,7 +1679,7 @@ class _CombinedViewState extends State<CombinedView> {
     final state = _textBookBloc.state;
     if (state is! TextBookLoaded) return;
 
-    final source = SourceSelection.resolve(
+    final source = _resolveSource(
       _sourceSelection,
       capturedText ?? _savedSelectedText.value,
       _selectionStartColumn,
@@ -1775,6 +1798,7 @@ class _CombinedViewState extends State<CombinedView> {
     int selectionLength,
   ) {
     final renderSettings = _selectionRenderSettings(state, settingsState);
+    final mikra = _mikraOf(state);
     final lineAt = _selectionLineCache.lines(
       widget.data,
       renderSettings,
@@ -1782,9 +1806,15 @@ class _CombinedViewState extends State<CombinedView> {
         state.linksByLine,
         state.bodyDisplayProfile.showAnchorMarkers,
         state.book.versionTitle,
+        mikra,
       ),
-      injectMarkers: (rawLine, index) =>
-          _injectAnchorMarkersForLine(rawLine, index, state),
+      injectMarkers: (rawLine, index) {
+        final injected = _injectAnchorMarkersForLine(rawLine, index, state);
+        // במקרא — השורה כפי שהיא מוצגת, כדי שבחירה חוצת פסוקים תימצא.
+        return mikra == null
+            ? injected
+            : mikraSelectionHtml(mikra, index, injected);
+      },
     );
     final window = buildSelectionWindow(
       visibleIndices: state.visibleIndices,
@@ -1796,6 +1826,7 @@ class _CombinedViewState extends State<CombinedView> {
       layout: readingLayoutOf(state),
       lines: widget.data,
       baseIndex: window.baseIndex,
+      mikra: mikra,
       sectionHeadings: _sectionHeadingsByLine,
       splitsAfter: (line) =>
           widget.showCommentaryAsExpansionTiles &&
@@ -1961,7 +1992,7 @@ class _CombinedViewState extends State<CombinedView> {
                         }
                       }
 
-                      final source = SourceSelection.resolve(
+                      final source = _resolveSource(
                         sourceSelection,
                         fixedPlain,
                         _selectionStartColumn,
@@ -2691,6 +2722,64 @@ class _CombinedViewState extends State<CombinedView> {
     );
   }
 
+  /// ציון המקור בתורה להעתקה עם «שם וכותרת» (פרשה ועלייה), לפי ההגדרות.
+  String? Function(int index)? _torahCitation(
+    TextBookLoaded state,
+    SettingsState settings,
+    List<String> lines,
+  ) {
+    if (settings.torahCopyCitation == TorahCopyCitation.chapter ||
+        !identical(lines, state.content)) {
+      return null;
+    }
+    final mikra = mikraTextStructureOf(state);
+    if (mikra == null) return null;
+    return (index) => torahCitationHeader(
+      mikra: mikra,
+      line: index,
+      bookTitle: state.book.title,
+      style: settings.torahCopyCitation,
+    );
+  }
+
+  /// [SourceSelection.resolve] בעמודות השורה הרגילה: במקרא התצוגה מסירה את
+  /// מספר הפסוק מתחילת השורה, והצרכנים (הערות, תוספים, דיווח) מצפים לעמודה
+  /// בשורה כפי שהיא בלי מצב המקרא.
+  ({T text, int? column}) _resolveSource<T extends String?>(
+    SourceSelection? selection,
+    T text,
+    int? column,
+  ) {
+    final source = SourceSelection.resolve(selection, text, column);
+    return (
+      text: source.text,
+      column: _sourceColumn(source.column, _selectionLineStart),
+    );
+  }
+
+  /// עמודה בטקסט המוצג → עמודה בשורה הרגילה (במקרא: אחרי מספר הפסוק).
+  int? _sourceColumn(int? column, int? line) {
+    if (column == null || line == null) return column;
+    final state = _textBookBloc.state;
+    if (state is! TextBookLoaded) return column;
+    final mikra = _mikraOf(state);
+    if (mikra == null || line < 0 || line >= widget.data.length) return column;
+    return column +
+        mikraColumnShift(
+          rawLine: widget.data[line],
+          line: line,
+          mikra: mikra,
+          settings: _selectionRenderSettings(
+            state,
+            context.read<SettingsBloc>().state,
+          ),
+        );
+  }
+
+  /// מבנה המקרא של הספר שבתצוגה; null לכל ספר אחר.
+  MikraStructure? _mikraOf(TextBookLoaded state) =>
+      identical(widget.data, state.content) ? mikraStructureOf(state) : null;
+
   ReaderLineContext _readerLineContext(
     TextBookLoaded state,
     SettingsState settingsState,
@@ -2704,6 +2793,7 @@ class _CombinedViewState extends State<CombinedView> {
     fontWeight: settingsState.fontBold ? FontWeight.bold : null,
     lineHeight: settingsState.lineHeight,
     sectionHeadings: _sectionHeadingsByLine,
+    mikra: _mikraOf(state),
     lineHtml: (line) => _lineHtml(
       line,
       state,
