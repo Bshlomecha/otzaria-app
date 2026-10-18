@@ -265,6 +265,7 @@ class IndexingBloc extends Bloc<IndexingEvent, IndexingState> {
         },
         onActualIndexingStarted: () => add(ActualIndexingStarted(workId)),
         onProgress: _progressOf(workId),
+        onFinalizing: () => add(IndexingFinalizing(workId)),
       ),
     );
   }
@@ -377,6 +378,7 @@ class IndexingBloc extends Bloc<IndexingEvent, IndexingState> {
               library,
               onActualIndexingStarted: onActualIndexingStarted,
               onProgress: onProgress,
+              onFinalizing: () => add(IndexingFinalizing(workId)),
             )
           : _repository.indexBooks(
               books,

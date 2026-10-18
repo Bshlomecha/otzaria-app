@@ -1101,6 +1101,8 @@ class _FakeIndexingRepository extends IndexingRepository {
     Library library, {
     void Function()? onActualIndexingStarted,
     required void Function(int processed, int total) onProgress,
+    void Function()? onFinalizing,
+    bool compactAfterCommit = false,
   }) {
     indexBooksCalls++;
     return _finish(onProgress);
@@ -1112,6 +1114,7 @@ class _FakeIndexingRepository extends IndexingRepository {
     Library library, {
     void Function()? onActualIndexingStarted,
     required void Function(int processed, int total) onProgress,
+    void Function()? onFinalizing,
   }) {
     reindexCalls++;
     return _finish(onProgress);
@@ -1124,6 +1127,7 @@ class _FakeIndexingRepository extends IndexingRepository {
     void Function(int processed, int total)? onScanProgress,
     void Function()? onActualIndexingStarted,
     required void Function(int processed, int total) onProgress,
+    void Function()? onFinalizing,
     Future<String?> Function(TextBook book)? loadText,
     Future<BigInt> Function(TextBook book, String text)? fingerprintOf,
     String? fingerprintLibraryPath,

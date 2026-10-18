@@ -919,6 +919,28 @@ void main() {
       },
     );
 
+    test('מבקש איחוד בסוף — המסמכים שנמחקו אינם נשארים בדיסק', () async {
+      final provider = _RecordingTantivyDataProvider(_RecordingSearchEngine());
+      final changed = TextBook(id: 5, title: 'שבת');
+      final library = _buildLibrary(bavliBooks: const []);
+      library.books.add(changed);
+      provider.indexedFilePaths.add(
+        IndexingRepository.buildIndexedBookFilePath(changed),
+      );
+      final repository = _ReindexProbeRepository(provider);
+      void onFinalizing() {}
+
+      await repository.reindexChangedBooks(
+        [changed],
+        library,
+        onProgress: (_, _) {},
+        onFinalizing: onFinalizing,
+      );
+
+      expect(repository.compactAfterCommit, isTrue);
+      expect(repository.onFinalizing, same(onFinalizing));
+    });
+
     test('כשל במחיקת האינדקס הישן — מחזיר false בלי לאנדקס', () async {
       // רגרסיה: הכשל נבלע, indexBooks דילג על הספר (עדיין ב-indexedFilePaths)
       // והפונקציה החזירה true — האינדקס הישן נשאר ודווח כהצלחה.
@@ -2873,6 +2895,63 @@ void main() {
     expect(engine.bytesByFilePath, {'id:101': utf8.encode('תוכן')});
   });
 
+  group('IndexingRepository.indexBooks — compactAfterCommit', () {
+    test('מאחד בסוף ריצה שהושלמה, כשהריצה עדיין פעילה', () async {
+      final engine = _CancellationRecordingEngine();
+      final provider = _RecordingTantivyDataProvider(engine);
+      final book = TextBook(id: 101, title: 'ספר');
+      final library = Library(categories: [])..books.add(book);
+      bool? indexingDuringOptimize;
+      engine.onOptimize = () =>
+          indexingDuringOptimize = provider.isIndexing.value;
+      var finalizingCalls = 0;
+
+      final result = await _FakeExtractionRepository(provider).indexBooks(
+        [book],
+        library,
+        onProgress: (_, _) {},
+        onFinalizing: () => finalizingCalls++,
+        compactAfterCommit: true,
+      );
+
+      expect(result.completed, isTrue);
+      expect(engine.optimizeCount, 1);
+      expect(indexingDuringOptimize, isTrue);
+      expect(finalizingCalls, 1);
+    });
+
+    test('ריצה שבוטלה אינה מאחדת', () async {
+      final engine = _CancellationRecordingEngine();
+      final provider = _RecordingTantivyDataProvider(engine);
+      final book = TextBook(id: 101, title: 'ספר');
+      final library = Library(categories: [])..books.add(book);
+      engine.onTextAdded = (_) => provider.isIndexing.value = false;
+
+      final result = await _FakeExtractionRepository(provider).indexBooks(
+        [book],
+        library,
+        onProgress: (_, _) {},
+        onFinalizing: () => fail('onFinalizing בריצה שבוטלה'),
+        compactAfterCommit: true,
+      );
+
+      expect(result.completed, isFalse);
+      expect(engine.optimizeCount, 0);
+    });
+
+    test('בלי הדגל — אינו מאחד', () async {
+      final engine = _CancellationRecordingEngine();
+      final book = TextBook(id: 101, title: 'ספר');
+      final library = Library(categories: [])..books.add(book);
+
+      await _FakeExtractionRepository(
+        _RecordingTantivyDataProvider(engine),
+      ).indexBooks([book], library, onProgress: (_, _) {});
+
+      expect(engine.optimizeCount, 0);
+    });
+  });
+
   group('IndexingRepository — ביטול אחרי כתיבת הספר הנוכחי', () {
     test('indexBooks: שומר את הקודם, מסיר את הנוכחי ומנסה אותו שוב', () async {
       final engine = _CancellationRecordingEngine();
@@ -3859,6 +3938,8 @@ class _ReindexProbeRepository extends IndexingRepository {
   _ReindexProbeRepository(super.provider, {super.hiddenStore});
 
   List<Book>? indexedBooks;
+  bool? compactAfterCommit;
+  void Function()? onFinalizing;
 
   @override
   Future<IndexingRunResult> indexBooks(
@@ -3866,8 +3947,12 @@ class _ReindexProbeRepository extends IndexingRepository {
     Library library, {
     void Function()? onActualIndexingStarted,
     required void Function(int processed, int total) onProgress,
+    void Function()? onFinalizing,
+    bool compactAfterCommit = false,
   }) async {
     indexedBooks = books;
+    this.compactAfterCommit = compactAfterCommit;
+    this.onFinalizing = onFinalizing;
     return IndexingRunResult.completed(
       processedBooks: books.length,
       totalBooks: books.length,
@@ -4194,8 +4279,14 @@ class _RecordingSearchEngine implements SearchEngine {
   @override
   Future<void> setBulkIndexing({required bool enabled}) async {}
 
+  int optimizeCount = 0;
+  void Function()? onOptimize;
+
   @override
-  Future<void> optimize() async {}
+  Future<void> optimize() async {
+    optimizeCount++;
+    onOptimize?.call();
+  }
 
   @override
   Future<void> deleteDocumentsByFilePaths({
