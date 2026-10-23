@@ -1,12 +1,5 @@
 // lib/widgets/dialogs/app_dialogs.dart
 // דיאלוגים גנריים של האפליקציה — M3-styled.
-//
-// [AppDialog] — דיאלוג יחיד עם שלושה בנאים ממוינים:
-//  • [AppDialog.singleAction] — כפתור אישור בלבד
-//  • [AppDialog.twoActions]   — ביטול (tonal) + אישור (primary)
-//  • [AppDialog.warning]      — ביטול (primary) + אישור (TextButton error)
-//
-// כל הוריאנטים כוללים ניווט מקלדת (חיצים, Enter, Escape) והדגשת פוקוס חזותית.
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

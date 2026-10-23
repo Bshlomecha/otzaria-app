@@ -1018,6 +1018,23 @@ void main() {
     );
 
     blocTest<IndexingBloc, IndexingState>(
+      'BLoC חדש מכבד את הבחירה שנשמרה ב-repository',
+      build: () => _FakeIndexingBloc(
+        _FakeIndexingRepository()..isEconomyIndexing = true,
+      ),
+      act: (bloc) => bloc.add(StartIndexing(libraryWithBooks(2))),
+      expect: () => [
+        const IndexingInProgress(
+          booksProcessed: 0,
+          totalBooks: 2,
+          isCreatingIndex: false,
+          isEconomy: true,
+        ),
+        const IndexingComplete(),
+      ],
+    );
+
+    blocTest<IndexingBloc, IndexingState>(
       'SetEconomyIndexing מעביר את הדגל ל-repository ומשתקף ב-state',
       seed: () => inProgress,
       build: _FakeIndexingBloc.new,
@@ -1171,6 +1188,8 @@ class _FakeIndexingRepository extends IndexingRepository {
   int cancelCalls = 0;
   int pauseCalls = 0;
   int resumeCalls = 0;
+  @override
+  bool isEconomyIndexing = false;
   final economyValues = <bool>[];
   Object? economyError;
   Completer<void>? economyGate;
@@ -1310,6 +1329,7 @@ class _FakeIndexingRepository extends IndexingRepository {
     await economyGate?.future;
     final error = economyError;
     if (error != null) throw error;
+    isEconomyIndexing = enabled;
   }
 
   @override

@@ -141,7 +141,7 @@ class PauseIndexing extends IndexingEvent {}
 
 class ResumeIndexing extends IndexingEvent {}
 
-/// הפעלה/כיבוי של מצב אינדוקס חסכוני — תקציב writer מוקטן במנוע.
+/// הפעלה/כיבוי של מצב אינדוקס חסכוני — הכנת ספרים ו-writer בתקציבים חסכוניים.
 class SetEconomyIndexing extends IndexingEvent {
   final bool enabled;
 

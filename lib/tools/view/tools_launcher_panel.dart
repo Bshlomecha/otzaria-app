@@ -662,7 +662,6 @@ class _ToolsLauncherPanelState extends State<ToolsLauncherPanel> {
                             Expanded(
                               child: _buildEmptyState(
                                 settingsState.isOfflineMode,
-                                allEntries,
                               ),
                             ),
                             Padding(
@@ -770,7 +769,7 @@ class _ToolsLauncherPanelState extends State<ToolsLauncherPanel> {
     });
   }
 
-  Widget _buildEmptyState(bool isOfflineMode, List<ToolCatalogEntry> all) {
+  Widget _buildEmptyState(bool isOfflineMode) {
     final hasQuery = _query.trim().isNotEmpty;
     final message = hasQuery
         ? context.settingsText('לא נמצאו כלים התואמים לחיפוש')

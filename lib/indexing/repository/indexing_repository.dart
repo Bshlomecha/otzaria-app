@@ -112,7 +112,6 @@ class IndexingRepository {
 
   bool _paused = false;
   Completer<void>? _resumeGate;
-  bool _economyIndexing = false;
   IndexingCancellationToken? _libraryBatchToken;
 
   /// ניתן להחלפה בבדיקות שאינן טוענות את המנוע הנייטיבי.
@@ -144,7 +143,7 @@ class IndexingRepository {
   late IndexChangeDetector changeDetector = StampChangeDetector(this);
 
   bool get isPaused => _paused;
-  bool get isEconomyIndexing => _economyIndexing;
+  bool get isEconomyIndexing => _tantivyDataProvider.isEconomyIndexing;
 
   /// משהה את לולאת האינדוקס לפני הספר הבא; הספר שבעיבוד מסתיים כרגיל, ושאר
   /// ספרי אצוות הספרייה שבעיבוד ינוסו שוב בהמשך.
@@ -161,13 +160,9 @@ class IndexingRepository {
     _resumeGate = null;
   }
 
-  /// מצב חסכוני: תקציב writer מוקטן במנוע — פחות threads ופחות זיכרון.
-  /// חל מיד גם על אינדוקס שרץ כעת, ונשמר לריצות הבאות באותה הפעלה.
-  Future<void> setEconomyIndexing(bool enabled) async {
-    final engine = await _tantivyDataProvider.engine;
-    await engine.setEconomyIndexing(enabled: enabled);
-    _economyIndexing = enabled;
-  }
+  /// מצב חסכוני מגביל את הכנת הספרים ואת ה-writer; חל בגבול אצווה.
+  Future<void> setEconomyIndexing(bool enabled) =>
+      _tantivyDataProvider.setEconomyIndexing(enabled);
 
   Future<void> _waitWhilePaused() async {
     while (_paused && _tantivyDataProvider.isIndexing.value) {

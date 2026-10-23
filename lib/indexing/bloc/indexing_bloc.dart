@@ -40,6 +40,7 @@ class IndexingBloc extends Bloc<IndexingEvent, IndexingState> {
        _showHiddenReconciliationError =
            showHiddenReconciliationError ?? UiSnack.showError,
        super(IndexingInitial()) {
+    _isEconomy = _repository.isEconomyIndexing;
     on<IndexingWorkEvent>((event, emit) async {
       try {
         await _onIndexingWork(event, emit);

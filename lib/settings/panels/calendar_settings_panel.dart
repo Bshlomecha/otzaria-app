@@ -168,7 +168,7 @@ class _CalendarSettingsTabState extends State<CalendarSettingsTab> {
     return BlocBuilder<CalendarCubit, CalendarState>(
       builder: (context, state) {
         final isOfflineMode = context.watch<SettingsBloc>().state.isOfflineMode;
-        // [הוסר] SingleChildScrollView — ToolsSettingsTab גולל את כולם
+        // בלי גלילה משלו: ToolsSettingsTab ו-CalendarSettingsPanel גוללים אותו
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

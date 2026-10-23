@@ -79,42 +79,29 @@ abstract class OpenedTab {
         dedupeKey: dedupeKey,
         externalMatches: externalMatches,
       );
-    } else if (book is ConvertibleDocumentBook) {
+    }
+    final textBook = switch (book) {
       // ספרי מסמך רצים דרך זרימת TextBook — העטיפה דרך toTextBook משמרת
       // id/categoryId/externalLibraryId שדרושים ל-LibraryProviderManager.
-      return TextBookTab(
-        book: book.toTextBook(),
-        index: index,
-        initialReadingAnchor: initialReadingAnchor,
-        searchText: searchText,
-        highlightText: highlightText,
-        permanentHighlightLine: permanentHighlightLine,
-        commentators: commentators,
-        openLeftPane: openLeftPane,
-        isPinned: isPinned,
-        showPageShapeView: showPageShapeView,
-        pinpointHighlight: pinpointHighlight,
-        pinpointHighlightSectionIndex: pinpointHighlightSectionIndex,
-        dedupeKey: dedupeKey,
-      );
-    } else if (book is TextBook) {
-      return TextBookTab(
-        book: book,
-        index: index,
-        initialReadingAnchor: initialReadingAnchor,
-        searchText: searchText,
-        highlightText: highlightText,
-        permanentHighlightLine: permanentHighlightLine,
-        commentators: commentators,
-        openLeftPane: openLeftPane,
-        isPinned: isPinned,
-        showPageShapeView: showPageShapeView,
-        pinpointHighlight: pinpointHighlight,
-        pinpointHighlightSectionIndex: pinpointHighlightSectionIndex,
-        dedupeKey: dedupeKey,
-      );
-    }
-    throw UnsupportedError("Unsupported book type: ${book.runtimeType}");
+      final ConvertibleDocumentBook document => document.toTextBook(),
+      final TextBook text => text,
+      _ => throw UnsupportedError("Unsupported book type: ${book.runtimeType}"),
+    };
+    return TextBookTab(
+      book: textBook,
+      index: index,
+      initialReadingAnchor: initialReadingAnchor,
+      searchText: searchText,
+      highlightText: highlightText,
+      permanentHighlightLine: permanentHighlightLine,
+      commentators: commentators,
+      openLeftPane: openLeftPane,
+      isPinned: isPinned,
+      showPageShapeView: showPageShapeView,
+      pinpointHighlight: pinpointHighlight,
+      pinpointHighlightSectionIndex: pinpointHighlightSectionIndex,
+      dedupeKey: dedupeKey,
+    );
   }
 
   /// מפענח טאב שמור; טיפוס לא מוכר זורק כדי שלא יישמר במקומו טאב שגוי.

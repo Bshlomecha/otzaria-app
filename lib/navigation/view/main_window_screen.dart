@@ -140,7 +140,6 @@ import 'package:otzaria/tour/view/tour_overlay_screen.dart';
 import 'package:otzaria/models/books.dart';
 import 'package:otzaria/plugins/view/plugin_background_host.dart';
 import 'package:otzaria/plugins/view/plugin_install_screen.dart';
-import 'package:otzaria/utils/navigation/book_open_coordinator.dart';
 import 'package:otzaria/utils/navigation/external_action_dispatcher.dart';
 import 'package:otzaria/utils/navigation/external_book_link_resolver.dart';
 import 'package:otzaria/utils/navigation/open_book.dart';
@@ -150,7 +149,6 @@ import 'package:otzaria/tools/calendar/helpers/calendar_date_helpers.dart'
     show getDafYomi, formatAmud;
 import 'package:otzaria/tools/calendar/helpers/daf_yomi_navigation.dart'
     show openDafYomiBook;
-import 'package:otzaria/utils/ui/reading_left_pane_policy.dart';
 
 /// פריט מאוחד לסרגל הניווט הראשי — מייצג תוסף או כלי-מובנה שהוצמד לסרגל.
 ///
@@ -1797,12 +1795,7 @@ class MainWindowScreenState extends State<MainWindowScreen>
     dispatchOpenBookAction(
       action: action,
       book: book,
-      coordinator: BookOpenCoordinator(
-        tabsBloc: context.read<TabsBloc>(),
-        historyBloc: context.read<HistoryBloc>(),
-        navigationBloc: context.read<NavigationBloc>(),
-        layoutWidth: readingLayoutWidthResolverOf(context),
-      ),
+      coordinator: bookOpenCoordinatorOf(context),
     );
     return true;
   }
@@ -1823,12 +1816,7 @@ class MainWindowScreenState extends State<MainWindowScreen>
     dispatchOpenPdfBookAction(
       action: action,
       book: book,
-      coordinator: BookOpenCoordinator(
-        tabsBloc: context.read<TabsBloc>(),
-        historyBloc: context.read<HistoryBloc>(),
-        navigationBloc: context.read<NavigationBloc>(),
-        layoutWidth: readingLayoutWidthResolverOf(context),
-      ),
+      coordinator: bookOpenCoordinatorOf(context),
     );
     return true;
   }
