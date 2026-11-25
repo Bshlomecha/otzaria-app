@@ -50,17 +50,11 @@ git clone --branch docs/app-structure-beit-midrash https://github.com/Bshlomecha
 ```
 עורכים את `docs/design-system/APP_STRUCTURE.md`, עושים commit בעברית ודוחפים לאותו ענף, ובקשת המיזוג מתעדכנת מעצמה. את התיאור מעדכנים ב־`gh pr edit 6015 -R Otzaria/otzaria --body-file …`.
 
-**ההדמיות** נוצרות בקוד Python, שכותב SVG. הסקריפטים שמורים בתיקיית הסשן הזה, `mockup-tools/`:
-- `kit.py`: צבעים, גופנים, אייקונים ורכיבי מעטפת.
-- `mockups.py` עד `mockups4.py`: כל אחד מרחיב את קודמו. מריצים את האחרון: `python -I mockups4.py out`.
-- `render.sh`: הופך SVG ל־PNG בעזרת Edge במצב headless, ברוחב 1320 על 800.
-
-כדי להריץ אותם בחשבון אחר:
-1. מעתיקים את התיקייה לחשבון החדש.
-2. מורידים את הגופנים מהמאגר, מהתיקייה `fonts/`: `FrankRuehlCLM-Medium.ttf`, `FrankRuehlCLM-Bold.ttf`, `NotoRashiHebrew-VariableFont_wght.ttf`.
-3. מעדכנים ב־`kit.py` את הנתיב `file:///…/fonts`, שמצביע היום על תיקייה זמנית של החשבון הזה.
-
-אם אין גישה לתיקייה, ההדמיות עצמן נמצאות בענף, והקוד אפשר לכתוב מחדש לפי המסמך.
+**ההדמיות** נוצרות בקוד Python שכותב SVG. הקוד, הגופנים, מסמך המסירה הזה ותמונת מצב של הפוסט נמצאים בענף עזר נפרד באותו מזלג:
+```
+git clone --branch tools/app-structure-mockups https://github.com/Bshlomecha/otzaria-app.git mockups
+```
+מריצים ב־Git Bash: `python -I mockups4.py out`, ואחר כך `bash render.sh "$PWD/out"`. נתיב הגופנים יחסי לתיקייה, ולכן הקוד רץ מכל חשבון. מעתיקים את התמונות שנוצרו ל־`docs/design-system/app-structure/` בענף של בקשת המיזוג. הפרטים ב־README שבענף.
 
 ## 6. הצעדים הבאים
 
