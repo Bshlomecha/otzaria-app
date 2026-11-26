@@ -1,0 +1,263 @@
+/* הדמיות המתווה המפושט (50637): שלושה מצבים — ספרייה · עיון · חקירה.
+   "דבש וחלב": הצעה לערכת "חום זהב"; שמנת, חול, בז' וזהב, בלי ורוד ובלי כתום. */
+@font-face { font-family: FrankRuhlCLM; font-weight: 400; src: url(../fonts/FrankRuehlCLM-Medium.ttf); }
+@font-face { font-family: FrankRuhlCLM; font-weight: 700; src: url(../fonts/FrankRuehlCLM-Bold.ttf); }
+@font-face { font-family: Drugulin; src: url(../fonts/DrugulinCLM-Bold.ttf); }
+@font-face { font-family: NotoRashi; src: url(../fonts/NotoRashiHebrew-VariableFont_wght.ttf); }
+
+:root {
+  --surface: #FFFBF3;      /* רקע קריאה: חלב־שמנת */
+  --page: #FFFDF8;
+  --panel: #F6EFE3;        /* חול בהיר */
+  --high: #F1E8D8;         /* חול */
+  --highest: #E6DAC4;      /* בז' */
+  --primary: #805610;      /* חום זהב */
+  --primary-dark: #5A3D0A;
+  --primary-c: #EFE2C3;    /* שמנת־זהב */
+  --on: #201B13;
+  --onv: #4F4539;
+  --muted: #7D705E;
+  --outline: #D8CCB5;
+  --outline-soft: #E7DDCA;
+  --gold: #B08A3E;
+  --gold-soft: rgba(176, 138, 62, .16);
+  /* שלושת הגוונים של המסגרת — ההבדל היחיד בין המסכים */
+  --lib: #8C6A2E;          /* ספרייה: עץ הארון */
+  --read: #B08A3E;         /* עיון: זהב הדף */
+  --probe: #6F7556;        /* חקירה: דיו זית */
+  --probe-paper: #FBFAF3;
+  --hl: #F3E3B5;           /* הדגשת מילות החיפוש */
+  --ui: 'Segoe UI', 'Noto Sans Hebrew', Arial, sans-serif;
+  --book: FrankRuhlCLM, 'Frank Ruhl Libre', David, serif;
+  --head: Drugulin, FrankRuhlCLM, serif;
+  --rashi: NotoRashi, David, serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1440px; height: 900px; overflow: hidden; background: #CFC6B4; }
+body { font-family: var(--ui); font-size: 13.5px; color: var(--on); -webkit-font-smoothing: antialiased; }
+.app { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--surface); }
+svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+svg.i.s { width: 17px; height: 17px; }
+svg.i.l { width: 22px; height: 22px; }
+
+/* ---------- רצועת הכותרת הקבועה ---------- */
+.strip { height: 50px; flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  background: linear-gradient(#F4ECDD, #EDE2CC); border-bottom: 1px solid #D6C39C; position: relative; z-index: 3; }
+.brand { display: flex; align-items: center; gap: 9px; padding-inline-start: 14px; }
+.brand img { width: 32px; height: 32px; filter: drop-shadow(0 1px 1px rgba(90, 61, 10, .25)); }
+.brand span { font-family: var(--head); font-size: 25px; color: var(--primary-dark); letter-spacing: .5px; line-height: 1; padding-top: 3px; }
+.switch { display: flex; align-items: center; gap: 6px; }
+.seg { display: flex; padding: 3px; gap: 2px; border-radius: 10px; background: #E3D5B8; box-shadow: inset 0 1px 2px rgba(90, 61, 10, .12); }
+.seg b { display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 16px; border-radius: 8px; font-weight: 500; font-size: 14px; color: var(--onv); }
+.seg b .i { width: 18px; height: 18px; }
+.seg b.on { background: #FFFCF5; color: var(--on); font-weight: 600; box-shadow: 0 1px 2px rgba(60, 40, 8, .18); }
+.seg b.on.lib .i { color: var(--lib); } .seg b.on.read .i { color: var(--read); } .seg b.on.probe .i { color: var(--probe); }
+.seg b.on.lib { box-shadow: 0 1px 2px rgba(60, 40, 8, .18), inset 0 -2px 0 var(--lib); }
+.seg b.on.read { box-shadow: 0 1px 2px rgba(60, 40, 8, .18), inset 0 -2px 0 var(--read); }
+.seg b.on.probe { box-shadow: 0 1px 2px rgba(60, 40, 8, .18), inset 0 -2px 0 var(--probe); }
+.spread { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; color: var(--onv); background: #E3D5B8; box-shadow: inset 0 1px 2px rgba(90, 61, 10, .12); }
+.spread.on { background: #FFFCF5; color: var(--primary); box-shadow: 0 1px 2px rgba(60, 40, 8, .18), inset 0 -2px 0 var(--gold); }
+.strip-end { display: flex; align-items: center; justify-content: flex-end; height: 100%; }
+.sbtn { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; margin-inline-end: 2px; border-radius: 8px; color: var(--onv); font-size: 13px; }
+.winctl { display: flex; height: 100%; margin-inline-start: 10px; border-inline-start: 1px solid #D9C9A6; }
+.winctl span { width: 46px; display: flex; align-items: center; justify-content: center; color: var(--onv); }
+
+/* ---------- הבמה: המסגרת העדינה של כל מצב ---------- */
+.stage { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+.stage::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.m-lib .stage::after { box-shadow: inset 0 0 0 1px rgba(140, 106, 46, .55), inset 0 0 0 4px rgba(140, 106, 46, .07); }
+.m-read .stage::after { box-shadow: inset 0 0 0 1px rgba(176, 138, 62, .7), inset 0 0 0 4px rgba(176, 138, 62, .09); }
+.m-probe .stage::after { box-shadow: inset 0 0 0 1px rgba(111, 117, 86, .6), inset 0 0 0 4px rgba(111, 117, 86, .08); }
+.m-lib .strip { border-bottom-color: rgba(140, 106, 46, .55); }
+.m-read .strip { border-bottom-color: rgba(176, 138, 62, .75); }
+.m-probe .strip { border-bottom-color: rgba(111, 117, 86, .6); }
+
+.row { height: 50px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 1px solid var(--outline-soft); background: var(--panel); }
+.row.thin { height: 44px; }
+.grow { flex: 1; }
+.ib { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; color: var(--onv); position: relative; }
+.ib.on { background: var(--primary-c); color: var(--primary-dark); }
+.ib.dim { color: #B7AA94; }
+.ib small { position: absolute; bottom: 3px; font-size: 9px; }
+.sep { width: 1px; height: 22px; background: var(--outline); margin: 0 4px; }
+.field { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border-radius: 9px; background: #FFFDF8; border: 1px solid var(--outline); color: var(--muted); font-size: 13.5px; }
+.field.focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); color: var(--on); }
+.field .ph { color: #9A8C76; }
+.field .val { color: var(--on); }
+.chipset { display: flex; padding: 2px; border-radius: 7px; background: var(--high); gap: 2px; }
+.chipset i { font-style: normal; font-size: 12.5px; padding: 3px 10px; border-radius: 5px; color: var(--onv); }
+.chipset i.on { background: #FFFCF5; color: var(--primary-dark); font-weight: 600; box-shadow: 0 1px 1px rgba(60, 40, 8, .15); }
+.crumbs { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--onv); white-space: nowrap; }
+.crumbs b { font-weight: 600; color: var(--on); }
+.crumbs .gt { color: #B3A486; font-size: 12px; }
+kbd { font-family: var(--ui); font-size: 11px; color: #8E806A; border: 1px solid var(--outline); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: #FFFCF5; }
+
+/* ---------- ספרייה ---------- */
+.lib-body { flex: 1; min-height: 0; display: flex; }
+.shelves { flex: 1; padding: 22px 24px; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 164px; gap: 16px; align-content: start; background: var(--panel); }
+.tile { position: relative; overflow: hidden; border-radius: 11px; background: #FFFCF6; border: 1px solid #E4D7BD; padding: 14px 16px 12px; display: flex; flex-direction: column; }
+.tile h3 { margin: 0; font-family: var(--head); font-weight: 400; font-size: 25px; color: var(--primary-dark); line-height: 1.1; }
+.tile .n { margin-top: 4px; font-size: 12px; color: var(--muted); }
+.tile .sub { margin-top: auto; font-size: 12px; line-height: 1.55; color: var(--onv); max-width: 88%; }
+.tile .wm { position: absolute; left: 10px; top: 12px; width: 56px; height: 56px; color: var(--gold); opacity: .22; }
+.tile.on { background: #FBF2DC; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
+.tile.on .wm { opacity: .38; }
+
+.preview { width: 400px; flex: none; position: relative; background: #FCF8EF; border-inline-start: 1px solid var(--outline); padding: 26px 28px 22px 30px; overflow: hidden; display: flex; flex-direction: column; }
+.preview .kicker { font-size: 12px; color: var(--muted); letter-spacing: .2px; }
+.preview h2 { margin: 6px 0 2px; font-family: var(--head); font-weight: 400; font-size: 34px; color: var(--primary-dark); line-height: 1.1; }
+.preview .by { font-family: var(--book); font-size: 17px; color: var(--onv); margin-bottom: 14px; }
+.preview .by b { font-weight: 700; color: var(--on); }
+.preview p { margin: 0 0 12px; font-family: var(--book); font-size: 16.5px; line-height: 1.7; text-align: justify; color: #2C251A; }
+.preview p.short { font-weight: 700; font-size: 17px; }
+.preview h4 { margin: 14px 0 8px; font-family: var(--head); font-weight: 400; font-size: 18px; color: var(--primary); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; font-size: 13px; margin: 4px 0 6px; }
+.facts dt { color: var(--muted); } .facts dd { margin: 0; color: var(--on); }
+.toc { list-style: none; margin: 0; padding: 0; font-family: var(--book); font-size: 15.5px; }
+.toc li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #E0D3B8; color: #2C251A; }
+.toc li span { font-family: var(--ui); font-size: 12px; color: var(--muted); }
+.actions { margin-top: auto; display: flex; gap: 8px; padding-top: 14px; }
+.btn { display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600; }
+.btn.pri { background: var(--primary); color: #FFF8EA; }
+.btn.sec { background: var(--primary-c); color: var(--primary-dark); }
+.btn.ghost { color: var(--primary); }
+
+/* רשימת ספרים במדף */
+.booklist { flex: 1; padding: 18px 24px; background: var(--panel); overflow: hidden; }
+.booklist h5 { margin: 6px 0 10px; font-family: var(--head); font-weight: 400; font-size: 19px; color: var(--primary); }
+.books { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 14px; }
+.bk { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; background: #FFFCF6; border: 1px solid #EADFC8; }
+.bk .sp { width: 6px; height: 34px; border-radius: 2px; background: linear-gradient(90deg, #C9A964, #9C7A36); opacity: .75; flex: none; }
+.bk div { display: flex; flex-direction: column; min-width: 0; }
+.bk b { font-family: var(--book); font-size: 16.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bk em { font-style: normal; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bk.on { background: #FBF2DC; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
+
+/* ציר מסירת התורה: סימן מים בשמאל התצוגה המקדימה */
+.axis { position: absolute; left: 16px; top: 120px; bottom: 90px; width: 64px; color: var(--gold); }
+.axis .ln { position: absolute; left: 10px; top: 0; bottom: 0; width: 1px; background: linear-gradient(rgba(176, 138, 62, 0), rgba(176, 138, 62, .55) 8%, rgba(176, 138, 62, .55) 92%, rgba(176, 138, 62, 0)); }
+.axis .er { position: absolute; left: 10px; display: flex; flex-direction: row-reverse; align-items: center; gap: 6px; font-size: 11px; white-space: nowrap; color: rgba(125, 100, 50, .75); }
+.axis .er::before { content: ''; width: 9px; height: 1px; background: rgba(176, 138, 62, .45); }
+.axis .me { position: absolute; left: 4px; width: 13px; height: 13px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(176, 138, 62, .2); }
+.axis .me-l { position: absolute; left: 26px; font-family: var(--head); font-size: 15px; color: var(--primary); white-space: nowrap; }
+.preview.with-axis { padding-left: 96px; }
+
+/* ---------- עיון ---------- */
+.tabs { height: 42px; flex: none; display: flex; align-items: flex-end; gap: 2px; padding: 0 12px; background: var(--high); }
+.tab { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 9px 9px 0 0; font-size: 13px; color: var(--onv); max-width: 230px; }
+.tab.on { background: var(--surface); color: var(--on); font-weight: 600; box-shadow: 0 -1px 0 var(--outline-soft); }
+.tab .x { opacity: .55; }
+.tab.add { padding: 0 8px; }
+.bar { height: 46px; flex: none; display: flex; align-items: center; gap: 2px; padding: 0 10px; background: var(--surface); border-bottom: 1px solid var(--outline-soft); }
+.bar .ttl { font-family: var(--head); font-size: 19px; color: var(--primary-dark); padding: 0 12px; white-space: nowrap; }
+.plug { position: relative; }
+.plug::after { content: ''; position: absolute; bottom: 4px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--gold); }
+.read-body { flex: 1; min-height: 0; display: flex; }
+.nav { width: 270px; flex: none; position: relative; background: var(--high); padding: 12px 12px 12px 14px; border-inline-end: 1px solid var(--outline); }
+/* רמז לכריכה בגבול הימני של חלונית הניווט */
+.nav::before { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 5px; background: linear-gradient(90deg, rgba(128, 86, 16, 0), rgba(128, 86, 16, .12)); }
+.nav .tt { display: flex; gap: 4px; margin-bottom: 10px; }
+.tree { list-style: none; margin: 0; padding: 0; font-size: 13.5px; }
+.tree li { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border-radius: 7px; color: var(--onv); white-space: nowrap; }
+.tree li.l2 { padding-inline-start: 26px; } .tree li.l3 { padding-inline-start: 44px; }
+.tree li.on { background: var(--primary-c); color: var(--primary-dark); font-weight: 600; }
+.tree li .c { opacity: .6; }
+.text { flex: 1; min-width: 0; background: var(--page); padding: 34px 56px 20px; overflow: hidden; }
+.text h1 { margin: 0 0 4px; text-align: center; font-family: var(--head); font-weight: 400; font-size: 30px; color: var(--primary-dark); }
+.text h2 { margin: 0 0 18px; text-align: center; font-family: var(--head); font-weight: 400; font-size: 19px; color: var(--primary); }
+.text h3 { margin: 18px 0 6px; font-family: var(--head); font-weight: 400; font-size: 19px; color: var(--primary); }
+.text p { margin: 0 0 10px; font-family: var(--book); font-size: 21px; line-height: 1.85; text-align: justify; }
+.text p.sel { background: rgba(239, 226, 195, .55); box-shadow: -8px 0 0 rgba(239, 226, 195, .55), 8px 0 0 rgba(239, 226, 195, .55); border-radius: 3px; }
+.text .ref { font-family: var(--ui); font-size: 12px; color: var(--muted); }
+.comm { width: 380px; flex: none; position: relative; background: #FDF8EE; border-inline-start: 1px solid var(--outline); display: flex; flex-direction: column; }
+/* קצה דפים דקיק בגבול השמאלי של חלונית המפרשים */
+.comm::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: repeating-linear-gradient(90deg, rgba(176, 138, 62, .18) 0 1px, transparent 1px 2.5px); }
+.comm .ctabs { display: flex; gap: 2px; padding: 10px 12px 0; border-bottom: 1px solid var(--outline-soft); }
+.comm .ctabs i { font-style: normal; font-size: 13px; padding: 6px 10px 8px; color: var(--onv); }
+.comm .ctabs i.on { color: var(--primary-dark); font-weight: 700; box-shadow: inset 0 -2px 0 var(--gold); }
+.comm .cbody { padding: 16px 20px 16px 24px; }
+.comm .cb { margin: 0 0 12px; font-family: var(--rashi); font-size: 16.5px; line-height: 1.75; text-align: justify; color: #2C251A; }
+.comm .cb b { font-family: var(--book); font-weight: 700; }
+.comm .src { font-family: var(--head); font-size: 17px; color: var(--primary); margin: 2px 0 6px; }
+
+/* ---------- חלונות צפים ---------- */
+.scrim { position: absolute; inset: 0; background: rgba(42, 33, 18, .30); z-index: 6; }
+.float { position: absolute; z-index: 7; background: #FFFCF6; border-radius: 14px; border: 1px solid #D9C9A6;
+  box-shadow: 0 24px 60px rgba(42, 33, 18, .32), 0 2px 6px rgba(42, 33, 18, .18); overflow: hidden; }
+.float .fh { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 18px; background: linear-gradient(#F6EFE1, #F0E6D2); border-bottom: 1px solid var(--outline); }
+.float .fh h3 { margin: 0; font-family: var(--head); font-weight: 400; font-size: 22px; color: var(--primary-dark); }
+.float .fb { padding: 16px 18px; }
+.res { list-style: none; margin: 10px 0 0; padding: 0; }
+.res li { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 9px; }
+.res li.on { background: var(--primary-c); }
+.res li b { font-family: var(--book); font-size: 17.5px; font-weight: 700; }
+.res li .path { font-size: 12px; color: var(--muted); }
+.res li .tag { margin-inline-start: auto; font-size: 11.5px; color: var(--primary); background: #F5EBD3; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.opt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--onv); }
+.chk { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--gold); display: inline-flex; align-items: center; justify-content: center; }
+.chk.on { background: var(--primary); border-color: var(--primary); }
+.radio { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--gold); display: inline-block; }
+.radio.on { border: 5px solid var(--primary); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 4px 10px; border-radius: 14px; background: #F5EBD3; color: var(--primary-dark); }
+.foot { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--outline-soft); background: #FBF6EC; font-size: 12px; color: var(--muted); }
+
+/* ---------- חקירה (תוצאות חיפוש) ---------- */
+.m-probe .row, .m-probe .tabs { background: #F2EFE2; }
+.m-probe .tab.on { background: var(--probe-paper); }
+.probe-body { flex: 1; min-height: 0; display: flex; background: var(--probe-paper); }
+.facet { width: 270px; flex: none; background: #F2EFE2; border-inline-end: 1px solid #DCD8C3; padding: 14px 12px 12px 14px; }
+.facet h6 { margin: 4px 4px 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.facet .tree li.on { background: #E5E4CF; color: #3E4228; }
+.facet .cnt { margin-inline-start: auto; font-size: 11.5px; color: var(--muted); }
+.hits { flex: 1; min-width: 0; padding: 14px 26px; overflow: hidden; }
+.sum { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--onv); margin: 2px 0 12px; }
+.hit { padding: 12px 16px 12px; margin-bottom: 8px; border-radius: 10px; background: #FFFEF8; border: 1px solid #E6E2CF; }
+.hit.on { border-color: var(--probe); box-shadow: 0 0 0 3px rgba(111, 117, 86, .14); }
+.hit .hp { display: flex; align-items: baseline; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.hit .hp b { font-family: var(--head); font-weight: 400; font-size: 18px; color: #3E4228; }
+.hit p { margin: 0; font-family: var(--book); font-size: 17px; line-height: 1.7; text-align: justify; }
+mark { background: var(--hl); color: inherit; border-radius: 3px; padding: 0 2px; }
+.ctx { width: 400px; flex: none; background: #FDFCF5; border-inline-start: 1px solid #DCD8C3; padding: 18px 24px; position: relative; }
+.ctx h3 { margin: 0; font-family: var(--head); font-weight: 400; font-size: 24px; color: #3E4228; }
+.ctx .path { font-size: 12px; color: var(--muted); margin: 2px 0 12px; }
+.ctx p { margin: 0 0 10px; font-family: var(--book); font-size: 17.5px; line-height: 1.8; text-align: justify; color: #3A3428; }
+.ctx p.dim { color: #8A8270; }
+
+/* ---------- פרישה ---------- */
+.spread-body { flex: 1; min-height: 0; display: flex; }
+.pane { display: flex; flex-direction: column; min-width: 0; position: relative; }
+.pane-h { height: 40px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 12px; font-size: 13px; border-bottom: 1px solid var(--outline-soft); }
+.pane-h .pt { font-family: var(--head); font-size: 18px; }
+.pane.p-lib { width: 290px; background: var(--panel); box-shadow: inset 0 3px 0 rgba(140, 106, 46, .55); border-inline-end: 1px solid var(--outline); }
+.pane.p-lib .pane-h .pt { color: var(--lib); }
+.pane.p-read { flex: 1; background: var(--page); box-shadow: inset 0 3px 0 rgba(176, 138, 62, .75); }
+.pane.p-read .pane-h .pt { color: var(--primary-dark); }
+.pane.p-probe { width: 420px; background: var(--probe-paper); box-shadow: inset 0 3px 0 rgba(111, 117, 86, .6); border-inline-start: 1px solid #DCD8C3; }
+.pane.p-probe .pane-h .pt { color: #3E4228; }
+.ltree { list-style: none; margin: 0; padding: 8px 8px; font-size: 13.5px; }
+.ltree li { display: flex; align-items: center; gap: 7px; height: 29px; padding: 0 8px; border-radius: 7px; color: var(--onv); white-space: nowrap; }
+.ltree li.l2 { padding-inline-start: 24px; } .ltree li.l3 { padding-inline-start: 40px; } .ltree li.l4 { padding-inline-start: 56px; }
+.ltree li.on { background: var(--primary-c); color: var(--primary-dark); font-weight: 600; }
+.ltree li .bkI { color: var(--gold); }
+.mini-hit { padding: 10px 14px; border-bottom: 1px solid #E6E2CF; }
+.mini-hit .hp { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.mini-hit .hp b { font-family: var(--head); font-weight: 400; font-size: 16px; color: #3E4228; }
+.mini-hit p { margin: 0; font-family: var(--book); font-size: 15.5px; line-height: 1.6; }
+.mini-hit.on { background: #EFEEDD; }
+
+/* ---------- לוח הסקירה ---------- */
+.board { position: absolute; inset: 0; background: #EEE6D6; padding: 34px 40px; display: flex; flex-direction: column; }
+.board h1 { margin: 0; font-family: var(--head); font-weight: 400; font-size: 34px; color: var(--primary-dark); }
+.board .lead { margin: 4px 0 22px; font-size: 14px; color: var(--onv); }
+.trip { display: flex; gap: 22px; }
+.trip figure { margin: 0; flex: 1; }
+.trip img { width: 100%; border-radius: 8px; border: 1px solid #CDBB94; box-shadow: 0 8px 22px rgba(42, 33, 18, .18); display: block; }
+.trip figcaption { margin-top: 10px; font-family: var(--head); font-size: 21px; color: var(--primary-dark); }
+.bh2 { margin: 26px 0 10px; font-family: var(--head); font-weight: 400; font-size: 22px; color: var(--primary-dark); }
+.crops { display: flex; flex-direction: column; gap: 8px; }
+.crop { height: 56px; overflow: hidden; border-radius: 8px; border: 1px solid #CDBB94; box-shadow: 0 4px 12px rgba(42, 33, 18, .12); }
+.crop img { width: 1358px; display: block; }
+.tile .sub .it { white-space: nowrap; }
+.tile .sub .it:not(:last-child)::after { content: ' · '; white-space: pre; color: #B3A486; }
+.trip figcaption span { display: block; font-family: var(--ui); font-size: 13px; color: var(--onv); margin-top: 2px; line-height: 1.5; }

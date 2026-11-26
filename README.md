@@ -21,3 +21,17 @@ bash render.sh "$PWD/out"
 התמונות נוצרות בתיקייה `out`. מעתיקים אותן ל־`docs/design-system/app-structure/` בענף `docs/app-structure-beit-midrash`.
 
 כדאי לשמור את התיקייה בנתיב בלי עברית. Edge טוען את הגופנים דרך כתובת `file:///`, ונתיב בעברית עלול להכשיל אותה.
+
+## המתווה המפושט (v2, 27.11)
+
+לפי פוסט 50637: שלושה מצבים למסך הראשי — ספרייה · עיון · חקירה. ההדמיות בתיקייה `v2/`, ב־HTML ו־CSS, ומצולמות ב־Edge headless ברוחב 1440 על 900.
+
+- `v2/build.py`: כותב את הדפים. `v2/style.css`: הצבעים, הגופנים והרכיבים. `v2/logo.png`: הלוגו מ־`assets/icon/icon_256.png` במאגר אוצריא.
+- `fonts/DrugulinCLM-Bold.ttf`: לכותרות, כבתוספים.
+
+```
+python -I v2/build.py /c/tmp/v2/out
+bash v2/render.sh /c/tmp/v2/out
+```
+
+התמונות נכנסות ל־`docs/design-system/app-structure/v2/` בענף המסמך. ההדמיות הישנות (`mockups*.py`) נשארות כמות שהן.
