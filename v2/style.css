@@ -306,3 +306,28 @@ mark { background: var(--hl); color: inherit; border-radius: 3px; padding: 0 2px
 .inuse .cut { height: 50px; border-radius: 10px; border: 1px solid #D9C9A6; box-shadow: 0 4px 12px rgba(42, 33, 18, .1);
   background-repeat: no-repeat; }
 .inuse figcaption { margin-top: 8px; font-size: 13px; color: var(--onv); }
+
+/* קצר וארוך ברצף: פסקה לקצר (מודגש במעודן), ואחריה פסקה לארוך — בשני המקומות */
+.preview p.short, .about .desc p.short { font-weight: 700; color: #3B2F1B; }
+.preview p.long, .about .desc p.long { font-weight: 400; color: #2C251A; }
+.preview p.short { font-size: 16.5px; margin-bottom: 8px; }
+.about .nm { margin: 0 0 14px; font-family: var(--head); font-weight: 400; font-size: 34px; color: var(--primary-dark); line-height: 1.1; }
+.about .desc { background: #FBF6EC; border: 1px solid var(--outline-soft); border-radius: 12px; padding: 14px 20px 8px; }
+.about .desc h5 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--outline-soft); font-family: var(--head); font-weight: 400; font-size: 18px; color: var(--primary); }
+.about .desc p { margin: 0 0 10px; font-family: var(--book); font-size: 17.5px; line-height: 1.75; text-align: justify; }
+
+/* סוגריים (27.11, הכרעת הבעלים): עגולות — מוקטנות משמעותית, פרנק דק (בלי הדגשה); מרובעות — מוקטנות במעט */
+.pr { font-family: var(--book); font-weight: 400; font-size: .76em; }
+.sq { font-size: .92em; }
+.ref .pr, .ref .sq { font: inherit; }
+/* מניין הספרים במשבצת — דק, קטן ואפור */
+.tile .n { font-size: 11px; font-weight: 300; color: #A99D89; }
+
+/* 27.11: מניין מדפים ואחריו ספרים — רק בתצוגה המקדימה, דק ואפור; ובלא כותרת «תיאור» ובלא כרטיס כשזה כל התוכן */
+.preview .cnt { font-family: var(--ui); font-size: 12px; font-weight: 300; color: #A99D89; margin: 2px 0 14px; }
+.about .desc { background: none; border: 0; border-radius: 0; padding: 0; }
+.about .desc p:last-child { margin-bottom: 4px; }
+
+/* שורת הסיכום (מדפים · ספרים) — למטה, מעל לחצן הפתיחה */
+.preview .sum { margin: auto 0 0; padding-top: 14px; }
+.preview .sum + .actions { margin-top: 0; padding-top: 8px; }

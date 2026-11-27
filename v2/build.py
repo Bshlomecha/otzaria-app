@@ -100,12 +100,26 @@ def strip(mode):
 </header>'''
 
 
+import re as _re
+
+
+def br(html):
+    """סוגריים עגולות — מוקטנות ובפרנק דק; מרובעות — מוקטנות מעט (27.11). רק בטקסט, לא בתוך תגיות."""
+    out = []
+    for part in _re.split(r'(<[^>]+>)', html):
+        if not part.startswith('<'):
+            part = _re.sub(r'\(([^()]*)\)', r'<span class="pr">(\1)</span>', part)
+            part = _re.sub(r'\[([^\[\]]*)\]', r'<span class="sq">[\1]</span>', part)
+        out.append(part)
+    return ''.join(out)
+
+
 def page(mode, body, title, extra=''):
     m = {'lib': 'm-lib', 'read': 'm-read', 'probe': 'm-probe', 'spread': 'm-spread'}[mode]
     return f'''<!doctype html>
 <html dir="rtl" lang="he"><head><meta charset="utf-8"><title>{title}</title>
 <link rel="stylesheet" href="style.css"></head>
-<body><div class="app {m}">{strip(mode)}<main class="stage">{body}</main>{extra}</div></body></html>'''
+<body><div class="app {m}">{strip(mode)}<main class="stage">{br(body)}</main>{br(extra)}</div></body></html>'''
 
 
 # ---------------- נתונים מן המסד ----------------
@@ -155,15 +169,13 @@ def tiles(active):
     out = []
     for name, n, sub in SHELVES:
         out.append(f'<div class="tile{" on" if name == active else ""}"><span class="wm">{ic("lib")}</span>'
-                   f'<h3>{name}</h3><div class="n">{fmt(n)} ספרים</div><div class="sub">' + ' '.join(f'<span class="it">{x}</span>' for x in sub.split(' · ')) + '</div></div>')
+                   f'<h3>{name}</h3><div class="sub">' + ' '.join(f'<span class="it">{x}</span>' for x in sub.split(' · ')) + '</div></div>')
     return '<div class="shelves">' + ''.join(out) + '</div>'
 
 
 def screen_library_shelf():
     prev = '''<aside class="preview">
-  <div class="kicker">מדף</div>
   <h2>ספרי מוסר</h2>
-  <div class="by">77 ספרים · שלושה מדפים</div>
   <p>ספרי תיקון המידות ועבודת ה׳: מ«שערי תשובה» לרבנו יונה ו«אורחות צדיקים», דרך «מסילת ישרים» ו«שני לוחות הברית», ועד ספרי תנועת המוסר.</p>
   <h4>במדף</h4>
   <ul class="toc">
@@ -177,6 +189,7 @@ def screen_library_shelf():
     <li>שערי תשובה <span>שער א</span></li>
     <li>אורחות צדיקים <span>שער הגאוה</span></li>
   </ul>
+  <div class="cnt sum">שלושה מדפים · 77 ספרים</div>
   <div class="actions"><span class="btn pri">''' + ic('folder', 's') + '''פתח את המדף</span><span class="btn ghost">''' + ic('pin', 's') + '''הצמד</span></div>
 </aside>'''
     body = lib_row(['אוצר הספרים']) + f'<div class="lib-body">{tiles("ספרי מוסר")}{prev}</div>'
@@ -367,15 +380,14 @@ def screen_find():
   <div class="foot">{ic("enter", "s")}פתיחה בלימוד<span style="margin-inline-start:14px">↑↓ מעבר בין התוצאות</span><span class="grow"></span>המדף של התוצאה מודגש בספרייה שמאחור</div>
 </div>'''
     prev = '''<aside class="preview">
-  <div class="kicker">מדף</div>
   <h2>תלמוד בבלי</h2>
-  <div class="by">1,890 ספרים · ארבעה עשר מדפים</div>
   <p>התלמוד הבבלי לסדריו, ועמו ספרי הראשונים והאחרונים על הש״ס, כללי הש״ס ומראי המקומות.</p>
   <h4>במדף</h4>
   <ul class="toc">
     <li>סדר זרעים <span>1</span></li><li>סדר מועד <span>11</span></li><li>סדר נשים <span>7</span></li>
     <li>סדר נזיקין <span>8</span></li><li>ראשונים <span>657</span></li><li>אחרונים <span>990</span></li>
   </ul>
+  <div class="cnt sum">ארבעה עשר מדפים · 1,890 ספרים</div>
 </aside>'''
     body = lib_row(['אוצר הספרים']) + f'<div class="lib-body">{tiles("תלמוד בבלי")}{prev}</div>'
     return page('lib', body, 'חלון האיתור', extra=float_)
@@ -566,6 +578,50 @@ def screen_icons():
 </div></body></html>'''
 
 
+# ---------------- קצר וארוך ברצף (27.11) ----------------
+MISHNA_SHORT = 'יסוד מסירת התורה שבעל פה, בששה סדרים שסידר רבנו הקדוש, הוא רבי יהודה הנשיא, בלשון קצרה וצחה, מתוך כל מסורות התנאים בדורות שלפניו (עי׳ רש״י ב״מ לג, א).'
+MISHNA_LONG = ('״והוא קיבץ כל השמועות וכל הדינים וכל הביאורים והפירושים ששמעו ממשה רבינו ושלמדו בית דין שבכל דור ודור בכל התורה כולה, '
+               'וחיבר מהכל ספר המשנה״ (הקדמת הרמב״ם למשנה תורה). נחתמה בערך ג׳תתקנ. הרחבת הדברים ופירוש כוונתם מתבארת ומתבררת בגמרא '
+               '[ראה מ״ש בתלמוד בבלי]. ועליהם חונים פירושי רבותינו הראשונים והאחרונים.')
+MISHNA_SUB = ['סדר זרעים', 'סדר מועד', 'סדר נשים', 'סדר נזיקין', 'סדר קדשים', 'סדר טהרות', 'ראשונים']
+
+
+def mishna_preview():
+    toc = ''.join(f'<li>{x}</li>' for x in MISHNA_SUB)
+    prev = f'''<aside class="preview">
+  <h2>משנה</h2>
+  <p class="short">{MISHNA_SHORT}</p>
+  <p class="long">{MISHNA_LONG}</p>
+  <h4>במדף</h4>
+  <ul class="toc">{toc}</ul>
+  <div class="cnt sum">10 מדפים · 930 ספרים</div>
+  <div class="actions"><span class="btn pri">''' + ic('folder', 's') + '''פתח את המדף</span></div>
+</aside>'''
+    return prev
+
+
+def screen_short_long_preview():
+    body = lib_row(['אוצר הספרים']) + f'<div class="lib-body">{tiles("משנה")}{mishna_preview()}</div>'
+    return page('lib', body, 'קצר וארוך ברצף — התצוגה המקדימה')
+
+
+def screen_short_long_float():
+    float_ = f'''<div class="scrim"></div>
+<div class="float about" style="top:120px;left:440px;width:720px">
+  <div class="fh">{ic("folder", "l")}<h3>תיאור המדף</h3><span class="grow"></span>{ib("x")}</div>
+  <div class="fb">
+    <h2 class="nm">משנה</h2>
+    <section class="desc">
+      <p class="short">{MISHNA_SHORT}</p>
+      <p class="long">{MISHNA_LONG}</p>
+    </section>
+  </div>
+  <div class="foot"><span class="grow"></span><span class="btn pri">סגור</span></div>
+</div>'''
+    body = lib_row(['אוצר הספרים']) + f'<div class="lib-body">{tiles("משנה")}{mishna_preview()}</div>'
+    return page('lib', body, 'קצר וארוך ברצף — החלונית הצפה', extra=float_)
+
+
 SCREENS = [
     ('02-spread-three', screen_spread_three),
     ('03-spread-two', screen_spread_two),
@@ -577,6 +633,8 @@ SCREENS = [
     ('09-search-window', screen_search),
     ('10-iyun', screen_probe),
     ('11-icons', screen_icons),
+    ('12-short-long-preview', screen_short_long_preview),
+    ('13-short-long-float', screen_short_long_float),
 ]
 
 
