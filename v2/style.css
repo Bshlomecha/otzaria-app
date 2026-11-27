@@ -261,3 +261,48 @@ mark { background: var(--hl); color: inherit; border-radius: 3px; padding: 0 2px
 .tile .sub .it { white-space: nowrap; }
 .tile .sub .it:not(:last-child)::after { content: ' · '; white-space: pre; color: #B3A486; }
 .trip figcaption span { display: block; font-family: var(--ui); font-size: 13px; color: var(--onv); margin-top: 2px; line-height: 1.5; }
+
+/* ---------- סדרת סל"ע: רקע מסתיר לאייקונים שיש בהם חפיפה ---------- */
+.seg b { --ibg: #E3D5B8; }
+.seg b.on { --ibg: #FFFCF5; }
+.seg b .i { width: 22px; height: 22px; }
+.field { --ibg: #FFFDF8; }
+.row { --ibg: var(--panel); }
+.m-probe .row { --ibg: #F2EFE2; }
+.bar { --ibg: var(--surface); }
+.ib.on { --ibg: var(--primary-c); }
+.float .fh { --ibg: #F3EADA; }
+.pane.p-lib { --ibg: var(--panel); }
+.pane.p-read .pane-h { --ibg: var(--surface); }
+.pane.p-probe { --ibg: var(--probe-paper); }
+.pane-h .i:first-child { width: 22px; height: 22px; }
+.pane.p-lib .pane-h .i:first-child { color: var(--lib); }
+.pane.p-read .pane-h .i:first-child { color: var(--read); }
+.pane.p-probe .pane-h .i:first-child { color: var(--probe); }
+.tab { --ibg: var(--high); } .tab.on { --ibg: var(--surface); }
+.m-probe .tab { --ibg: #F2EFE2; } .m-probe .tab.on { --ibg: var(--probe-paper); }
+.btn.pri { --ibg: var(--primary); } .btn.sec { --ibg: var(--primary-c); }
+.pill { --ibg: #F5EBD3; }
+
+/* ---------- דף סדרת האייקונים ---------- */
+.icons-board { background: linear-gradient(#F6EFE1, #EFE5D1); }
+.ich { display: flex; align-items: center; gap: 18px; }
+.ich img { width: 64px; height: 64px; filter: drop-shadow(0 2px 3px rgba(90, 61, 10, .25)); }
+.ich .lead { margin: 4px 0 0; }
+.icrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 34px; }
+.icrow.second { margin-top: 18px; }
+.icf { position: relative; margin: 0; padding: 30px 28px 26px; border-radius: 16px; background: #FFFCF6; border: 1px solid #E2D3B2;
+  box-shadow: 0 6px 18px rgba(42, 33, 18, .08); display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 22px; align-items: center; --ibg: #FFFCF6; }
+.icf svg.big { grid-row: span 2; width: 176px; height: 176px; fill: none; stroke: #9A7424; stroke-width: .5; stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .9)); }
+.second .icf svg.big { width: 150px; height: 150px; stroke-width: .56; }
+.icf figcaption { font-family: var(--head); font-size: 26px; color: var(--primary-dark); align-self: end; }
+.icf figcaption span { display: block; font-family: var(--ui); font-size: 13px; color: var(--onv); margin-top: 4px; }
+.icf .sm { display: flex; gap: 16px; align-items: center; color: var(--onv); align-self: start; grid-column: 2; grid-row: 2; margin-top: 10px; }
+.icf .ltr { position: absolute; left: 18px; top: 12px; font-family: var(--head); font-size: 40px; color: rgba(176, 138, 62, .22); }
+
+.inuse { display: grid; grid-template-columns: 1fr 1.6fr; gap: 22px; margin-top: 30px; }
+.inuse figure { margin: 0; }
+.inuse .cut { height: 50px; border-radius: 10px; border: 1px solid #D9C9A6; box-shadow: 0 4px 12px rgba(42, 33, 18, .1);
+  background-repeat: no-repeat; }
+.inuse figcaption { margin-top: 8px; font-size: 13px; color: var(--onv); }

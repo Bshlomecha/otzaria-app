@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-"""הדמיות המתווה המפושט (פוסט 50637): שלושה מצבים למסך הראשי — ספרייה · עיון · חקירה.
+"""הדמיות המתווה המפושט (פוסט 50637): שלושה מצבים למסך הראשי — ספרייה · לימוד · עיון (סל"ע).
 כותב קובצי HTML לתיקיית היעד; render.sh הופך אותם לתמונות 1440x900.
 
 הרצה (Git Bash):  python -I v2/build.py <out>  &&  bash v2/render.sh <out>
 התיקייה <out> צריכה לשבת בנתיב בלי עברית (Edge טוען את הגופנים דרך file:///).
 שמות הספרים, המדפים, מניין הספרים במדפים ותוכן העניינים — מן המסד של אוצריא (seforim.db, 27.11.2026).
-המספרים בחלון החקירה להמחשה בלבד."""
+המספרים במסך העיון (תוצאות החיפוש) להמחשה בלבד."""
 import os
 import shutil
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PROBE = 'חקירה'   # השם הקצר ל"תוצאות חיפוש" — טרם הוכרע
+READ = 'לימוד'    # הספר הפתוח (עד היום נקרא 'עיון')
+PROBE = 'עיון'    # תוצאות החיפוש
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import icons  # noqa: E402
 
 # ---------------- אייקונים (קו דק, 24x24) ----------------
 P = {
@@ -64,6 +67,7 @@ P = {
     'enter': '<path d="M19 6v5.5a2 2 0 0 1-2 2H6"/><path d="M10 9.5l-4 4 4 4"/>',
     'source': '<path d="M5 4h9l5 5v11H5z"/><path d="M14 4v5h5"/><path d="M8.5 14.5l2 2 4-4.5"/>',
     'pin': '<path d="M9 4h6l-1 5.5 3.5 3.5h-11L10 9.5z"/><path d="M12 13v7"/>',
+    **icons.SERIES,
     'history': '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.7h3.7M12 8v4.3l3 1.7"/>',
 }
 
@@ -85,7 +89,7 @@ def strip(mode):
     return f'''<header class="strip">
   <div class="brand"><img src="logo.png" alt=""><span>אוצריא</span></div>
   <div class="switch">
-    <div class="seg">{seg("lib", "ספרייה", "lib")}{seg("read", "עיון", "read")}{seg("probe", PROBE, "probe")}</div>
+    <div class="seg">{seg("lib", "ספרייה", "m_lib")}{seg("read", READ, "m_limud")}{seg("probe", PROBE, "m_iyun")}</div>
     <span class="spread{spread_on}" title="פרישה: כולם במקביל">{ic("spread")}</span>
   </div>
   <div class="strip-end">
@@ -140,8 +144,8 @@ def lib_row(crumbs, query='', who='חיבור', locator=''):
   {ib("back", title="אחורה")}{ib("fwd", dim=True, title="קדימה")}{ib("up", title="מדף מעל")}{ib("home", title="אוצר הספרים")}
   <div class="crumbs" style="margin-inline-start:6px">{cr}</div>
   <div class="grow"></div>
-  <div class="field{" focus" if query else ""}" style="width:300px">{ic("search", "s")}{q}<span class="grow"></span><div class="chipset">{chips}</div></div>
-  <div class="field" style="width:330px">{ic("target", "s")}{loc}</div>
+  <div class="field{" focus" if query else ""}" style="width:300px">{ic("pull", "s")}{q}<span class="grow"></span><div class="chipset">{chips}</div></div>
+  <div class="field" style="width:330px">{ic("find", "s")}{loc}</div>
   <div class="sep"></div>
   {ib("grid", on=True, title="משבצות")}{ib("list", title="רשימה")}
 </div>'''
@@ -217,7 +221,7 @@ def screen_library_book():
     <li>פרקים ו–ט — הזריזות <span></span></li>
     <li>פרקים י–יב — הנקיות <span>ועוד 17 פרקים</span></li>
   </ul>
-  <div class="actions"><span class="btn pri">''' + ic('read', 's') + '''פתח לעיון</span><span class="btn sec">''' + ic('person', 's') + '''על המחבר</span><span class="btn ghost">''' + ic('source', 's') + '''מקור</span></div>
+  <div class="actions"><span class="btn pri">''' + ic('m_limud', 's') + '''פתח ללימוד</span><span class="btn sec">''' + ic('person', 's') + '''על המחבר</span><span class="btn ghost">''' + ic('source', 's') + '''מקור</span></div>
 </aside>'''
     body = lib_row(['אוצר הספרים', 'ספרי מוסר', 'אחרונים']) + f'<div class="lib-body">{main}{prev}</div>'
     return page('lib', body, 'ספרייה — ספר נבחר')
@@ -253,7 +257,7 @@ def screen_library_author():
     return page('lib', body, 'ספרייה — חיפוש מחבר')
 
 
-# ---------------- עיון ----------------
+# ---------------- לימוד ----------------
 MISHNA = ('מאימתי קורין את שמע בערבין. משעה שהכהנים נכנסים לאכול בתרומתן עד סוף האשמורה הראשונה דברי ר׳ אליעזר. '
           'וחכמים אומרים עד חצות. רבן גמליאל אומר עד שיעלה עמוד השחר. מעשה ובאו בניו מבית המשתה אמרו לו לא קרינו את שמע '
           'אמר להם אם לא עלה עמוד השחר חייבין אתם לקרות ולא זו בלבד אמרו אלא כל מה שאמרו חכמים עד חצות מצותן עד שיעלה עמוד השחר '
@@ -288,7 +292,7 @@ def read_bar():
   <div class="sep"></div>
   {ib("zin", title="הגדל")}{ib("zout", title="הקטן")}
   <span class="ib" title="ניקוד וטעמים" style="font-family:var(--book);font-size:19px;font-weight:700">אָ</span>
-  {ib("search", title="חיפוש בספר")}{ib("target", title="איתור")}
+  {ib("search", title="חיפוש בספר")}{ib("find", title="איתור")}
   <div class="sep"></div>
   {ib("bookmark", title="סימנייה")}{ib("note", title="הערות אישיות")}{ib("versions", title="נוסחאות")}
   <span class="grow"></span>
@@ -339,7 +343,7 @@ def read_text(sel=True):
 
 def screen_reading():
     body = read_tabs() + read_bar() + f'<div class="read-body">{nav_panel()}{read_text()}{comm_panel()}</div>'
-    return page('read', body, 'עיון')
+    return page('read', body, READ)
 
 
 # ---------------- חלונות הביצוע ----------------
@@ -355,12 +359,12 @@ def screen_find():
     lis = lis.replace('&quot;', '"')
     float_ = f'''<div class="scrim"></div>
 <div class="float" style="top:118px;left:390px;width:660px">
-  <div class="fh">{ic("target", "l")}<h3>איתור</h3><span class="grow"></span>{ib("x")}</div>
+  <div class="fh">{ic("find", "l")}<h3>איתור</h3><span class="grow"></span>{ib("x")}</div>
   <div class="fb">
-    <div class="field focus" style="height:44px;font-size:16px">{ic("target", "s")}<span class="val" style="font-family:var(--book);font-size:19px">ברכות ב</span><span class="grow"></span><span class="pill">ספר + מקום</span></div>
+    <div class="field focus" style="height:44px;font-size:16px">{ic("find", "s")}<span class="val" style="font-family:var(--book);font-size:19px">ברכות ב</span><span class="grow"></span><span class="pill">ספר + מקום</span></div>
     <ul class="res">{lis}</ul>
   </div>
-  <div class="foot">{ic("enter", "s")}פתיחה בעיון<span style="margin-inline-start:14px">↑↓ מעבר בין התוצאות</span><span class="grow"></span>המדף של התוצאה מודגש בספרייה שמאחור</div>
+  <div class="foot">{ic("enter", "s")}פתיחה בלימוד<span style="margin-inline-start:14px">↑↓ מעבר בין התוצאות</span><span class="grow"></span>המדף של התוצאה מודגש בספרייה שמאחור</div>
 </div>'''
     prev = '''<aside class="preview">
   <div class="kicker">מדף</div>
@@ -380,9 +384,9 @@ def screen_find():
 def screen_search():
     float_ = f'''<div class="scrim"></div>
 <div class="float" style="top:108px;left:370px;width:700px">
-  <div class="fh">{ic("search", "l")}<h3>חיפוש בספרייה</h3><span class="grow"></span>{ib("x")}</div>
+  <div class="fh">{ic("srch", "l")}<h3>חיפוש בספרייה</h3><span class="grow"></span>{ib("x")}</div>
   <div class="fb">
-    <div class="field focus" style="height:46px">{ic("search", "s")}<span class="val" style="font-family:var(--book);font-size:20px">עמוד השחר</span><span class="grow"></span></div>
+    <div class="field focus" style="height:46px">{ic("srch", "s")}<span class="val" style="font-family:var(--book);font-size:20px">עמוד השחר</span><span class="grow"></span></div>
     <div style="display:flex;gap:26px;margin:16px 4px 6px">
       <div style="display:flex;flex-direction:column;gap:9px">
         <div style="font-size:12px;color:var(--muted);font-weight:600">אופן החיפוש</div>
@@ -399,18 +403,18 @@ def screen_search():
     </div>
     <div style="font-size:12px;color:var(--muted);font-weight:600;margin:14px 4px 8px">היכן</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <span class="pill">{ic("lib", "s")}כל הספרייה</span>
+      <span class="pill">{ic("m_lib", "s")}כל הספרייה</span>
       <span class="pill" style="background:#FFFCF6;border:1px dashed var(--gold)">{ic("plus", "s")}הגבל למדפים</span>
       <span class="pill" style="background:#FFFCF6;border:1px dashed var(--gold)">{ic("plus", "s")}הגבל לספרים</span>
     </div>
   </div>
-  <div class="foot"><span>התוצאות ייפתחו בלשונית חדשה במסך ה{PROBE}</span><span class="grow"></span><span class="btn sec" style="height:34px">שמור כחיפוש קבוע</span><span class="btn pri" style="height:34px">{ic("search", "s")}חפש</span></div>
+  <div class="foot"><span>התוצאות ייפתחו בלשונית חדשה במסך ה{PROBE}</span><span class="grow"></span><span class="btn sec" style="height:34px">שמור כחיפוש קבוע</span><span class="btn pri" style="height:34px">{ic("srch", "s")}חפש</span></div>
 </div>'''
     body = read_tabs() + read_bar() + f'<div class="read-body">{nav_panel()}{read_text(sel=False)}{comm_panel()}</div>'
     return page('read', body, 'חלון החיפוש', extra=float_)
 
 
-# ---------------- חקירה ----------------
+# ---------------- עיון (תוצאות החיפוש) ----------------
 HITS = [
     ('ברכות', 'דף ב.', 'תלמוד בבלי &gt; סדר זרעים',
      '…וחכמים אומרים עד חצות. רבן גמליאל אומר עד שיעלה <mark>עמוד השחר</mark>. מעשה ובאו בניו מבית המשתה אמרו לו לא קרינו את שמע…'),
@@ -426,7 +430,7 @@ HITS = [
 
 
 def probe_tabs():
-    t = ''.join(f'<span class="tab{" on" if i == 0 else ""}">{ic("probe", "s")}{q}<span class="x">{ic("x", "s")}</span></span>'
+    t = ''.join(f'<span class="tab{" on" if i == 0 else ""}">{ic("srch", "s")}{q}<span class="x">{ic("x", "s")}</span></span>'
                  for i, q in enumerate(['עמוד השחר', 'צאת הכוכבים', 'זמן שכיבה']))
     return f'<div class="tabs">{t}<span class="tab add">{ic("plus", "s")}</span></div>'
 
@@ -446,7 +450,7 @@ def screen_probe():
     row = f'''<div class="row thin">
   <span style="font-family:var(--head);font-size:18px;color:#3E4228">«עמוד השחר»</span>
   <span class="pill" style="background:#E8E7D3;color:#3E4228">צירוף מדויק</span><span class="pill" style="background:#E8E7D3;color:#3E4228">כל הספרייה</span>
-  {ib("search", title="ערוך את החיפוש")}
+  {ib("srch", title="ערוך את החיפוש")}
   <span class="grow"></span>
   <span style="font-size:12.5px;color:var(--muted)">412 תוצאות ב־96 ספרים</span>
   <div class="sep"></div>{ib("sort", title="מיון")}{ib("filter", title="סינון")}{ib("commp", on=True, title="תצוגה מקדימה")}
@@ -455,7 +459,7 @@ def screen_probe():
   <h3>ברכות, דף ב.</h3><div class="path">תלמוד בבלי &gt; סדר זרעים &gt; ברכות &gt; פרק ראשון</div>
   <p class="dim">מאימתי קורין את שמע בערבין. משעה שהכהנים נכנסים לאכול בתרומתן עד סוף האשמורה הראשונה דברי ר׳ אליעזר.</p>
   <p>וחכמים אומרים עד חצות. רבן גמליאל אומר עד שיעלה <mark>עמוד השחר</mark>. מעשה ובאו בניו מבית המשתה אמרו לו לא קרינו את שמע אמר להם אם לא עלה <mark>עמוד השחר</mark> חייבין אתם לקרות…</p>
-  <div class="actions" style="position:absolute;bottom:20px;left:24px;right:24px"><span class="btn pri">{ic("read", "s")}פתח לעיון</span><span class="btn sec">{ic("spread2", "s")}פתח לצד החקירה</span></div>
+  <div class="actions" style="position:absolute;bottom:20px;left:24px;right:24px"><span class="btn pri">{ic("m_limud", "s")}פתח ללימוד</span><span class="btn sec">{ic("spread2", "s")}פתח לצד העיון</span></div>
 </aside>'''
     body = probe_tabs() + row + f'<div class="probe-body">{facet()}<section class="hits">{hits}</section>{ctx}</div>'
     return page('probe', body, PROBE)
@@ -464,8 +468,8 @@ def screen_probe():
 # ---------------- פרישה ----------------
 def lib_tree_pane():
     return f'''<section class="pane p-lib">
-  <div class="pane-h">{ic("lib", "s")}<span class="pt">ספרייה</span><span class="grow"></span>{ib("search")}</div>
-  <div style="padding:8px 10px 0"><div class="field" style="height:32px">{ic("search", "s")}<span class="ph">חיפוש חיבור או מחבר</span></div></div>
+  <div class="pane-h">{ic("m_lib")}<span class="pt">ספרייה</span><span class="grow"></span></div>
+  <div style="padding:8px 10px 0"><div class="field" style="height:32px">{ic("pull", "s")}<span class="ph">חיפוש חיבור או מחבר</span></div></div>
   <ul class="ltree">
     <li>{ic("c1l", "s")}תנ״ך</li>
     <li>{ic("cdown", "s")}תלמוד בבלי</li>
@@ -490,7 +494,7 @@ def lib_tree_pane():
 
 
 def read_pane(compact_bar=True):
-    bar = f'''<div class="pane-h" style="background:var(--surface)">{ic("read", "s")}<span class="pt">ברכות · דף ב.</span><span class="grow"></span>
+    bar = f'''<div class="pane-h" style="background:var(--surface)">{ic("m_limud")}<span class="pt">{READ} · ברכות, דף ב.</span><span class="grow"></span>
   {ib("c2r")}{ib("c1r")}{ib("justify")}{ib("c1l")}{ib("c2l")}<div class="sep"></div>{ib("zin")}{ib("zout")}{ib("commp")}{ib("more")}</div>'''
     return f'''<section class="pane p-read">{bar}
   <article class="text" style="padding:24px 40px">
@@ -504,7 +508,7 @@ def probe_pane():
     hits = ''.join(f'''<div class="mini-hit{" on" if i == 1 else ""}"><div class="hp"><b>{t}</b> · {w}</div><p>{s}</p></div>'''
                    for i, (t, w, p, s) in enumerate(HITS))
     return f'''<section class="pane p-probe">
-  <div class="pane-h">{ic("probe", "s")}<span class="pt">{PROBE}: «עמוד השחר»</span><span class="grow"></span><span style="font-size:12px;color:var(--muted)">412</span>{ib("filter")}</div>
+  <div class="pane-h">{ic("m_iyun")}<span class="pt">{PROBE}: «עמוד השחר»</span><span class="grow"></span><span style="font-size:12px;color:var(--muted)">412</span>{ib("filter")}</div>
   {hits}
 </section>'''
 
@@ -516,9 +520,9 @@ def screen_spread_three():
 
 def screen_spread_two():
     body = f'<div class="spread-body">{read_pane()}{probe_pane()}</div>'
-    html = page('spread', body, 'פרישה — עיון וחקירה')
+    html = page('spread', body, 'פרישה — לימוד ועיון')
     # במתג: פרישה של שניים — ספרייה כבויה
-    return html.replace('title="פרישה: כולם במקביל">' + ic('spread'), 'title="פרישה: עיון וחקירה">' + ic('spread2'))
+    return html.replace('title="פרישה: כולם במקביל">' + ic('spread'), 'title="פרישה: לימוד ועיון">' + ic('spread2'))
 
 
 def screen_board():
@@ -528,15 +532,38 @@ def screen_board():
 <div class="lead">רצועת הכותרת קבועה; המתג שבמרכזה מחליף את המצב, וההבדל בין המצבים — בגוון המסגרת בלבד.</div>
 <div class="trip">
  <figure><img src="04-library-shelf.png"><figcaption>ספרייה<span>הרקע שעומד תמיד: משבצות המדפים, ותצוגה מקדימה משמאל.</span></figcaption></figure>
- <figure><img src="07-reading.png"><figcaption>עיון<span>הספר הפתוח ולשוניות הספרים; ניווט מימין ומפרשים משמאל.</span></figcaption></figure>
- <figure><img src="10-probe.png"><figcaption>{PROBE}<span>תוצאות החיפוש, כמו היום: סינון מימין, תצוגה מקדימה משמאל.</span></figcaption></figure>
+ <figure><img src="07-limud.png"><figcaption>{READ}<span>הספר הפתוח ולשוניות הספרים; ניווט מימין ומפרשים משמאל.</span></figcaption></figure>
+ <figure><img src="10-iyun.png"><figcaption>{PROBE}<span>תוצאות החיפוש, כמו היום: סינון מימין, תצוגה מקדימה משמאל.</span></figcaption></figure>
 </div>
 <h2 class="bh2">רצועת הכותרת — אחת לשלושתם</h2>
 <div class="crops">
  <div class="crop"><img src="04-library-shelf.png"></div>
- <div class="crop"><img src="07-reading.png"></div>
- <div class="crop"><img src="10-probe.png"></div>
+ <div class="crop"><img src="07-limud.png"></div>
+ <div class="crop"><img src="10-iyun.png"></div>
 </div></div></body></html>'''
+
+
+def screen_icons():
+    def big(k, label, sub, letter=''):
+        lt = f'<span class="ltr">{letter}</span>' if letter else ''
+        return (f'<figure class="icf">{lt}<svg viewBox="0 0 24 24" class="big">{icons.SERIES[k]}</svg>'
+                f'<div class="sm"><svg viewBox="0 0 24 24" class="i">{icons.SERIES[k]}</svg>'
+                f'<svg viewBox="0 0 24 24" class="i l">{icons.SERIES[k]}</svg></div>'
+                f'<figcaption>{label}<span>{sub}</span></figcaption></figure>')
+    row1 = (big('m_lib', 'ספרייה', 'מדף, ועליו ספרים עומדים', 'ס') + big('m_limud', READ, 'ספר פתוח על סטנדר', 'ל')
+            + big('m_iyun', PROBE, 'שלושה ספרים פתוחים זה על זה, על שולחן', 'ע'))
+    row2 = (big('pull', 'חיפוש חיבור או מחבר', 'ספר נשלף מבין ספרי המדף') + big('find', 'איתור', 'יד מצביעה על שורה בספר פתוח')
+            + big('srch', 'חיפוש', 'ספר פתוח, שורות בהירות ומילים מסומנות'))
+    return f'''<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>סדרת האייקונים</title>
+<link rel="stylesheet" href="style.css"></head><body><div class="board icons-board">
+<div class="ich"><img src="logo.png" alt=""><div><h1>סדרת האייקונים</h1>
+<div class="lead">קו נקי ומעודן, ברוח הספר הפתוח שבסמל אוצריא. שלושת המצבים — <b>ס</b>פרייה · <b>ל</b>ימוד · <b>ע</b>יון — ושלושה נלווים.</div></div></div>
+<div class="icrow">{row1}</div><div class="icrow second">{row2}</div>
+<div class="inuse">
+ <figure><div class="cut" style="background-image:url(07-limud.png);background-position:-552px 0"></div><figcaption>במתג שבראש החלון</figcaption></figure>
+ <figure><div class="cut" style="background-image:url(02-spread-three.png);background-position:right -50px"></div><figcaption>בראש כל חלונית בפרישה</figcaption></figure>
+</div>
+</div></body></html>'''
 
 
 SCREENS = [
@@ -545,10 +572,11 @@ SCREENS = [
     ('04-library-shelf', screen_library_shelf),
     ('05-library-book', screen_library_book),
     ('06-library-author', screen_library_author),
-    ('07-reading', screen_reading),
+    ('07-limud', screen_reading),
     ('08-find-window', screen_find),
     ('09-search-window', screen_search),
-    ('10-probe', screen_probe),
+    ('10-iyun', screen_probe),
+    ('11-icons', screen_icons),
 ]
 
 
